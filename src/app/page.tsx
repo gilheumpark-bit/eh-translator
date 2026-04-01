@@ -1,7 +1,8 @@
 'use client';
 
 import { ChangeEvent, startTransition, useEffect, useRef, useState } from 'react';
-import { useAuth, UserButton, SignInButton } from '@clerk/nextjs';
+import { useAuth } from '@/lib/AuthContext';
+import { NetworkBridgePanel } from '@/components/translator/NetworkBridgePanel';
 import {
   loadProjectFromCloud,
   saveProjectToCloud,
@@ -9,243 +10,44 @@ import {
   supabaseAnonKey,
   supabaseUrl,
 } from '@/lib/supabase';
-
-const LANGUAGES = [
-  { code: 'ja', label: '日本語 (JAPANESE)' },
-  { code: 'ko', label: '한국어 (KOREAN)' },
-  { code: 'en', label: 'ENGLISH' },
-  { code: 'zh', label: 'CHINESE' }
-];
-
-const PROVIDERS = [
-  { id: 'openai', label: 'GPT-4o (OAI)', role: 'Ensemble Base' },
-  { id: 'claude', label: 'CLAUDE 3.5 (ANT)', role: 'Creative Refinement' },
-  { id: 'gemini', label: 'GEMINI 1.5 (GOOG)', role: 'Context Analyst' },
-  { id: 'deepseek', label: 'DEEPSEEK (DS)', role: 'Fast Draft' }
-];
-
-const BACKGROUND_MODES = [
-  { id: 'nebula', label: 'NEBULA (DEEP)', note: '오로라 딥스페이스 - 집중형 컨텍스트' },
-  { id: 'glacial', label: 'GLACIAL (WHITE)', note: '화이트 글래스 - 문서 작업 최적화' }
-];
-
-const PROJECT_LIBRARY_KEY = 'eh_translator_project_library';
-const MAX_LOCAL_PROJECTS = 18;
-const REFERENCE_PROJECT_LIMIT = 4;
-const REFERENCE_CHAPTER_LIMIT = 3;
-const REFERENCE_TEXT_LIMIT = 12000;
-const STORY_BIBLE_LIMIT = 12000;
-
-type ChapterEntry = {
-  name: string;
-  content: string;
-  result: string;
-  isDone: boolean;
-  stageProgress: number;
-  storyNote?: string;
-  error?: string;
-};
-
-type ProjectSnapshot = {
-  id: string;
-  project_name: string;
-  updated_at: number;
-  chapters: ChapterEntry[];
-  worldContext: string;
-  characterProfiles: string;
-  storySummary: string;
-  from: string;
-  to: string;
-};
-
-type ExportProjectMeta = {
-  id: string;
-  project_name: string;
-  updated_at: number;
-};
-
-function limitText(text: string, max: number) {
-  const normalized = text.trim();
-  if (normalized.length <= max) return normalized;
-  return `${normalized.slice(0, max).trim()}\n\n[...중략...]`;
-}
-
-function normalizeChapter(raw: any, fallbackName = 'Untitled Part'): ChapterEntry {
-  return {
-    name: typeof raw?.name === 'string' && raw.name.trim() ? raw.name : fallbackName,
-    content: typeof raw?.content === 'string' ? raw.content : '',
-    result: typeof raw?.result === 'string' ? raw.result : '',
-    isDone: Boolean(raw?.isDone),
-    stageProgress: typeof raw?.stageProgress === 'number' ? raw.stageProgress : 0,
-    storyNote: typeof raw?.storyNote === 'string' ? raw.storyNote : '',
-    error: typeof raw?.error === 'string' ? raw.error : '',
-  };
-}
-
-function normalizeProjectSnapshots(value: unknown) {
-  if (!Array.isArray(value)) return [] as ProjectSnapshot[];
-
-  const seen = new Set<string>();
-
-  return value
-    .map((raw: any) => {
-      const id = typeof raw?.id === 'string' && raw.id.trim() ? raw.id : null;
-      if (!id) return null;
-
-      return {
-        id,
-        project_name:
-          typeof raw?.project_name === 'string' && raw.project_name.trim()
-            ? raw.project_name
-            : typeof raw?.projectName === 'string' && raw.projectName.trim()
-              ? raw.projectName
-              : `Project ${id.slice(-4)}`,
-        updated_at: typeof raw?.updated_at === 'number' ? raw.updated_at : Date.now(),
-        chapters: Array.isArray(raw?.chapters)
-          ? raw.chapters.map((chapter: any, index: number) => normalizeChapter(chapter, `Part ${index + 1}`))
-          : [],
-        worldContext: typeof raw?.worldContext === 'string' ? raw.worldContext : '',
-        characterProfiles: typeof raw?.characterProfiles === 'string' ? raw.characterProfiles : '',
-        storySummary: typeof raw?.storySummary === 'string' ? raw.storySummary : '',
-        from: typeof raw?.from === 'string' ? raw.from : 'ja',
-        to: typeof raw?.to === 'string' ? raw.to : 'ko',
-      } satisfies ProjectSnapshot;
-    })
-    .filter((snapshot): snapshot is ProjectSnapshot => Boolean(snapshot))
-    .filter((snapshot) => {
-      if (seen.has(snapshot.id)) return false;
-      seen.add(snapshot.id);
-      return true;
-    })
-    .sort((left, right) => right.updated_at - left.updated_at)
-    .slice(0, MAX_LOCAL_PROJECTS);
-}
-
-function mergeProjectSnapshots(primary: ProjectSnapshot[], secondary: ProjectSnapshot[]) {
-  const merged = new Map<string, ProjectSnapshot>();
-
-  for (const project of secondary) {
-    merged.set(project.id, project);
-  }
-
-  for (const project of primary) {
-    merged.set(project.id, project);
-  }
-
-  return Array.from(merged.values())
-    .sort((left, right) => right.updated_at - left.updated_at)
-    .slice(0, MAX_LOCAL_PROJECTS);
-}
-
-function toProjectMeta(projects: ProjectSnapshot[]): ExportProjectMeta[] {
-  return projects.map((project) => ({
-    id: project.id,
-    project_name: project.project_name,
-    updated_at: project.updated_at,
-  }));
-}
-
-function projectFingerprint(snapshot: Omit<ProjectSnapshot, 'updated_at'>) {
-  return JSON.stringify({
-    id: snapshot.id,
-    project_name: snapshot.project_name,
-    chapters: snapshot.chapters.map((chapter) => ({
-      name: chapter.name,
-      content: chapter.content,
-      result: chapter.result,
-      isDone: chapter.isDone,
-      stageProgress: chapter.stageProgress,
-      storyNote: chapter.storyNote || '',
-      error: chapter.error || '',
-    })),
-    worldContext: snapshot.worldContext,
-    characterProfiles: snapshot.characterProfiles,
-    storySummary: snapshot.storySummary,
-    from: snapshot.from,
-    to: snapshot.to,
-  });
-}
-
-function mergeStoryBible(existing: string, incoming: string) {
-  const nextBlock = incoming.trim();
-  if (!nextBlock) return existing;
-  if (existing.includes(nextBlock)) return limitText(existing, STORY_BIBLE_LIMIT);
-
-  const merged = existing.trim()
-    ? `${existing.trim()}\n\n---\n${nextBlock}`
-    : nextBlock;
-
-  return limitText(merged, STORY_BIBLE_LIMIT);
-}
-
-function buildReferenceBundle(referenceIds: string[], projectList: ProjectSnapshot[], currentProjectId: string) {
-  const selectedProjects = projectList
-    .filter((project) => project.id !== currentProjectId && referenceIds.includes(project.id))
-    .slice(0, REFERENCE_PROJECT_LIMIT);
-
-  if (!selectedProjects.length) {
-    return {
-      context: '',
-      characterProfiles: '',
-      storySummary: '',
-      episodeContext: '',
-      continuityNotes: '',
-      projectNames: [] as string[],
-    };
-  }
-
-  const worldBlocks: string[] = [];
-  const profileBlocks: string[] = [];
-  const summaryBlocks: string[] = [];
-  const episodeBlocks: string[] = [];
-  const noteBlocks: string[] = [];
-
-  for (const project of selectedProjects) {
-    if (project.worldContext.trim()) {
-      worldBlocks.push(`[${project.project_name} · World Lore]\n${project.worldContext.trim()}`);
-    }
-
-    if (project.characterProfiles.trim()) {
-      profileBlocks.push(`[${project.project_name} · Character Voices]\n${project.characterProfiles.trim()}`);
-    }
-
-    if (project.storySummary.trim()) {
-      summaryBlocks.push(`[${project.project_name} · Story Bible]\n${project.storySummary.trim()}`);
-    }
-
-    const recentChapters = project.chapters
-      .filter((chapter) => (chapter.result || chapter.content).trim())
-      .slice(-REFERENCE_CHAPTER_LIMIT);
-
-    for (const chapter of recentChapters) {
-      episodeBlocks.push(
-        `[${project.project_name} / ${chapter.name}]\n${limitText((chapter.result || chapter.content).trim(), 2600)}`
-      );
-    }
-
-    noteBlocks.push(
-      [
-        `[${project.project_name}]`,
-        project.storySummary.trim() && `최근 서사 요약:\n${limitText(project.storySummary.trim(), 1200)}`,
-        project.characterProfiles.trim() && `말투 기준:\n${limitText(project.characterProfiles.trim(), 1000)}`,
-      ]
-        .filter(Boolean)
-        .join('\n')
-    );
-  }
-
-  return {
-    context: limitText(worldBlocks.join('\n\n'), 4200),
-    characterProfiles: limitText(profileBlocks.join('\n\n'), 4200),
-    storySummary: limitText(summaryBlocks.join('\n\n'), 5200),
-    episodeContext: limitText(episodeBlocks.join('\n\n---\n\n'), REFERENCE_TEXT_LIMIT),
-    continuityNotes: limitText(noteBlocks.join('\n\n'), 5000),
-    projectNames: selectedProjects.map((project) => project.project_name),
-  };
-}
+import { useAppDialog } from '@/hooks/useAppDialog';
+import { AppDialog } from '@/components/ui/AppDialog';
+import { MobileWorkspaceDrawer } from '@/components/translator/MobileWorkspaceDrawer';
+import { ChapterSidebar } from '@/components/translator/ChapterSidebar';
+import { ContextSidebar } from '@/components/translator/ContextSidebar';
+import {
+  PROJECT_LIBRARY_KEY,
+  MAX_LOCAL_PROJECTS,
+  REFERENCE_TEXT_LIMIT,
+  STORY_BIBLE_LIMIT,
+  LANGUAGES,
+  PROVIDERS,
+  BACKGROUND_MODES,
+  estimateTokens,
+} from '@/lib/translator-constants';
+import {
+  limitText,
+  normalizeChapter,
+  normalizeProjectSnapshots,
+  mergeProjectSnapshots,
+  toProjectMeta,
+  projectFingerprint,
+  mergeStoryBible,
+  buildReferenceBundle,
+  splitTextIntoChunks,
+} from '@/lib/project-normalize';
+import type {
+  ChapterEntry,
+  ProjectSnapshot,
+  HistoryEntry,
+  StyleHeuristicAnalysis,
+  DomainPreset,
+} from '@/types/translator';
 
 export default function Home() {
-  const { isLoaded: isAuthLoaded, userId } = useAuth();
+  const { dialog, alert, confirm, dismiss, confirmYes, alertOk } = useAppDialog();
+  const { loading: authLoading, userId, user: authUser, signInWithGoogle, signOut, getIdToken, error: authError } = useAuth();
+  const isAuthLoaded = !authLoading;
   const isHydrated = useRef(false);
   
   // App States
@@ -264,7 +66,7 @@ export default function Home() {
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   
   // UI States
@@ -277,12 +79,22 @@ export default function Home() {
   const [showSummary, setShowSummary] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [translationMode, setTranslationMode] = useState<'novel' | 'general'>('novel');
-  
+  const [glossaryText, setGlossaryText] = useState('');
+  const [domainPreset, setDomainPreset] = useState<DomainPreset>('general');
+  const [preserveDialogueLayout, setPreserveDialogueLayout] = useState(true);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle');
+  const [cloudSyncDetail, setCloudSyncDetail] = useState('');
+  const [lastApproxTokens, setLastApproxTokens] = useState<number | null>(null);
+  const [compareResultB, setCompareResultB] = useState('');
+  const [showMobileDrawer, setShowMobileDrawer] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'chapters' | 'context'>('chapters');
+  const [showExportOptions, setShowExportOptions] = useState(false);
+
   // Specialized Contexts
   const [worldContext, setWorldContext] = useState('');
   const [characterProfiles, setCharacterProfiles] = useState('');
   const [storySummary, setStorySummary] = useState('');
-  const [styleAnalysis, setStyleAnalysis] = useState<any>(null);
+  const [styleAnalysis, setStyleAnalysis] = useState<StyleHeuristicAnalysis | null>(null);
   const [backResult, setBackResult] = useState('');
   const prevActiveChapterIndex = useRef<number | null>(activeChapterIndex);
   const storyBibleRequestCounter = useRef(0);
@@ -328,6 +140,9 @@ export default function Home() {
       if (parsed.characterProfiles !== undefined) setCharacterProfiles(parsed.characterProfiles);
       if (parsed.storySummary !== undefined) setStorySummary(parsed.storySummary);
       if (parsed.referenceIds !== undefined) setReferenceIds(parsed.referenceIds);
+      if (parsed.glossaryText !== undefined) setGlossaryText(parsed.glossaryText);
+      if (parsed.domainPreset !== undefined) setDomainPreset(parsed.domainPreset);
+      if (parsed.preserveDialogueLayout !== undefined) setPreserveDialogueLayout(parsed.preserveDialogueLayout);
     } catch (error) {
       console.error('Failed to restore state', error);
     } finally {
@@ -358,12 +173,15 @@ export default function Home() {
         characterProfiles,
         storySummary,
         referenceIds,
+        glossaryText,
+        domainPreset,
+        preserveDialogueLayout,
       }));
       setLastSavedAt(Date.now());
     }, 320);
 
     return () => window.clearTimeout(timeout);
-  }, [projectId, projectName, chapters, activeChapterIndex, source, result, from, to, provider, history, isZenMode, backgroundMode, isCatMode, translationMode, worldContext, characterProfiles, storySummary, referenceIds]);
+  }, [projectId, projectName, chapters, activeChapterIndex, source, result, from, to, provider, history, isZenMode, backgroundMode, isCatMode, translationMode, worldContext, characterProfiles, storySummary, referenceIds, glossaryText, domainPreset, preserveDialogueLayout]);
 
   useEffect(() => {
     if (!isHydrated.current) return;
@@ -520,8 +338,10 @@ export default function Home() {
     if (!hasMeaningfulData) return;
 
     const timeout = window.setTimeout(async () => {
+      setCloudSyncStatus('saving');
+      setCloudSyncDetail('동기화 중…');
       try {
-        await saveProjectToCloud(userId, projectId, {
+        const { error } = await saveProjectToCloud(userId, projectId, {
           projectId,
           projectName,
           chapters,
@@ -535,9 +355,25 @@ export default function Home() {
           storySummary,
           referenceIds,
           translationMode,
+          glossaryText,
+          domainPreset,
+          preserveDialogueLayout,
         });
+        if (error && error !== 'DB_DISABLED') {
+          setCloudSyncStatus('error');
+          const msg =
+            typeof error === 'object' && error !== null && 'message' in error
+              ? String((error as { message?: string }).message)
+              : '클라우드 저장 실패';
+          setCloudSyncDetail(msg);
+        } else {
+          setCloudSyncStatus('ok');
+          setCloudSyncDetail(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }
       } catch (error) {
         console.error('Failed to save project to cloud', error);
+        setCloudSyncStatus('error');
+        setCloudSyncDetail(error instanceof Error ? error.message : '클라우드 저장 실패');
       }
     }, 1800);
 
@@ -558,20 +394,43 @@ export default function Home() {
     storySummary,
     referenceIds,
     translationMode,
+    glossaryText,
+    domainPreset,
+    preserveDialogueLayout,
   ]);
 
-  const requestTranslation = async (payload: Record<string, unknown>) => {
+  const readStreamText = async (res: Response, onDelta: (s: string) => void) => {
+    const reader = res.body?.getReader();
+    if (!reader) return await res.text();
+    const dec = new TextDecoder();
+    let acc = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      acc += dec.decode(value, { stream: true });
+      onDelta(acc);
+    }
+    return acc;
+  };
+
+  const requestTranslation = async (
+    payload: Record<string, unknown>,
+    options?: { stream?: boolean; onDelta?: (s: string) => void }
+  ) => {
     const res = await fetch('/api/translate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
+    const approx = res.headers.get('x-approx-prompt-tokens');
+    if (approx) setLastApproxTokens(parseInt(approx, 10));
+
     const contentType = res.headers.get('content-type') || '';
 
     if (!res.ok) {
       if (contentType.includes('application/json')) {
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error || '요청 처리 중 오류가 발생했습니다.');
       }
 
@@ -579,8 +438,12 @@ export default function Home() {
     }
 
     if (contentType.includes('application/json')) {
-      const data = await res.json();
+      const data = (await res.json()) as { result?: string };
       return data.result || '';
+    }
+
+    if (options?.stream && options?.onDelta) {
+      return readStreamText(res, options.onDelta);
     }
 
     return res.text();
@@ -678,6 +541,9 @@ export default function Home() {
       continuityNotes: continuity.continuityNotes,
       episodeContext: continuity.episodeContext,
       referenceIds,
+      glossary: glossaryText.trim() || undefined,
+      domainPreset: translationMode === 'general' ? domainPreset : 'general',
+      preserveDialogueLayout: translationMode === 'novel' ? preserveDialogueLayout : false,
       ...payload,
     };
   };
@@ -763,7 +629,7 @@ export default function Home() {
         setStatusMsg('STORY BIBLE UPDATED');
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : '번역 오류가 발생했습니다.');
+      await alert(error instanceof Error ? error.message : '번역 오류가 발생했습니다.');
     } finally {
       setLoading(false);
       setStatusMsg('');
@@ -799,7 +665,8 @@ export default function Home() {
             provider: item.providerId,
             apiKey: apiKeys[item.providerId] || '',
             mode: translationMode,
-          })
+          }),
+          { stream: true, onDelta: (s) => setResult(s) }
         );
         setResult(currentResult);
         patchActiveChapter({
@@ -817,7 +684,7 @@ export default function Home() {
         setStatusMsg('STORY BIBLE UPDATED');
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Deep Pipeline 중 오류가 발생했습니다.');
+      await alert(error instanceof Error ? error.message : 'Deep Pipeline 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
       setStatusMsg('');
@@ -869,10 +736,10 @@ export default function Home() {
         setShowUrlImport(false);
         setUrlInput('');
       } else {
-        alert('내용을 가져오지 못했습니다.');
+        await alert('내용을 가져오지 못했습니다.');
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'URL 읽기 오류');
+      await alert(error instanceof Error ? error.message : 'URL 읽기 오류');
     } finally {
       setLoading(false);
       setStatusMsg('');
@@ -897,8 +764,12 @@ export default function Home() {
     });
   };
 
-  const exportData = () => {
-    if (!confirm('현재 프로젝트의 핵심 번역 데이터만 JSON 파일로 추출하시겠습니까?\n보안상 API 키와 참조 프로젝트 원문은 포함되지 않습니다.')) return;
+  const exportData = async () => {
+    const ok = await confirm(
+      '현재 프로젝트의 핵심 번역 데이터만 JSON 파일로 추출하시겠습니까?\n보안상 API 키와 참조 프로젝트 원문은 포함되지 않습니다.',
+      '데이터 추출'
+    );
+    if (!ok) return;
     const blob = new Blob([JSON.stringify({
       projectName,
       chapters,
@@ -918,6 +789,9 @@ export default function Home() {
       isZenMode,
       isCatMode,
       translationMode,
+      glossaryText,
+      domainPreset,
+      preserveDialogueLayout,
     }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -929,53 +803,72 @@ export default function Home() {
 
   const importData = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    const input = event.target;
     if (!file) return;
 
-    if (!confirm('새 프로젝트 파일을 불러오시겠습니까?\n현재 작업 중인 모든 데이터가 덮어씌워집니다. 이 작업은 되돌릴 수 없습니다.')) {
-      event.target.value = '';
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result));
-        startTransition(() => {
-          if (parsed.projectName !== undefined) setProjectName(parsed.projectName);
-          if (parsed.chapters !== undefined && Array.isArray(parsed.chapters)) {
-            setChapters(parsed.chapters.map((chapter: any, index: number) => normalizeChapter(chapter, `Part ${index + 1}`)));
-          }
-          if (parsed.projectList !== undefined) setProjectList(normalizeProjectSnapshots(parsed.projectList));
-          if (parsed.projectLibrary !== undefined) setProjectList(normalizeProjectSnapshots(parsed.projectLibrary));
-          if (parsed.activeChapterIndex !== undefined) setActiveChapterIndex(parsed.activeChapterIndex);
-          if (parsed.source !== undefined) setSource(parsed.source);
-          if (parsed.result !== undefined) setResult(parsed.result);
-          if (parsed.from !== undefined) setFrom(parsed.from);
-          if (parsed.to !== undefined) setTo(parsed.to);
-          if (parsed.provider !== undefined) setProvider(parsed.provider);
-          if (parsed.history !== undefined) setHistory(parsed.history);
-          if (parsed.worldContext !== undefined) setWorldContext(parsed.worldContext);
-          if (parsed.characterProfiles !== undefined) setCharacterProfiles(parsed.characterProfiles);
-          if (parsed.storySummary !== undefined) setStorySummary(parsed.storySummary);
-          if (parsed.referenceIds !== undefined) setReferenceIds(Array.isArray(parsed.referenceIds) ? parsed.referenceIds : []);
-          if (parsed.backgroundMode !== undefined) setBackgroundMode(parsed.backgroundMode);
-          if (parsed.isZenMode !== undefined) setIsZenMode(parsed.isZenMode);
-          if (parsed.isCatMode !== undefined) setIsCatMode(parsed.isCatMode);
-          if (parsed.translationMode !== undefined) setTranslationMode(parsed.translationMode);
-        });
-      } catch {
-        alert('JSON 파일 형식이 올바르지 않습니다.');
+    void (async () => {
+      const proceed = await confirm(
+        '새 프로젝트 파일을 불러오시겠습니까?\n현재 작업 중인 모든 데이터가 덮어씌워집니다. 이 작업은 되돌릴 수 없습니다.',
+        '프로젝트 불러오기'
+      );
+      if (!proceed) {
+        input.value = '';
+        return;
       }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        void (async () => {
+          try {
+            const parsed = JSON.parse(String(reader.result)) as Record<string, unknown>;
+            startTransition(() => {
+              if (parsed.projectName !== undefined) setProjectName(parsed.projectName as string);
+              if (parsed.chapters !== undefined && Array.isArray(parsed.chapters)) {
+                setChapters(
+                  parsed.chapters.map((chapter: unknown, index: number) =>
+                    normalizeChapter(chapter, `Part ${index + 1}`)
+                  )
+                );
+              }
+              if (parsed.projectList !== undefined) setProjectList(normalizeProjectSnapshots(parsed.projectList));
+              if (parsed.projectLibrary !== undefined) setProjectList(normalizeProjectSnapshots(parsed.projectLibrary));
+              if (parsed.activeChapterIndex !== undefined) setActiveChapterIndex(parsed.activeChapterIndex as number);
+              if (parsed.source !== undefined) setSource(parsed.source as string);
+              if (parsed.result !== undefined) setResult(parsed.result as string);
+              if (parsed.from !== undefined) setFrom(parsed.from as string);
+              if (parsed.to !== undefined) setTo(parsed.to as string);
+              if (parsed.provider !== undefined) setProvider(parsed.provider as string);
+              if (parsed.history !== undefined) setHistory(parsed.history as HistoryEntry[]);
+              if (parsed.worldContext !== undefined) setWorldContext(parsed.worldContext as string);
+              if (parsed.characterProfiles !== undefined) setCharacterProfiles(parsed.characterProfiles as string);
+              if (parsed.storySummary !== undefined) setStorySummary(parsed.storySummary as string);
+              if (parsed.referenceIds !== undefined)
+                setReferenceIds(Array.isArray(parsed.referenceIds) ? (parsed.referenceIds as string[]) : []);
+              if (parsed.backgroundMode !== undefined) setBackgroundMode(parsed.backgroundMode as string);
+              if (parsed.isZenMode !== undefined) setIsZenMode(parsed.isZenMode as boolean);
+              if (parsed.isCatMode !== undefined) setIsCatMode(parsed.isCatMode as boolean);
+              if (parsed.translationMode !== undefined) setTranslationMode(parsed.translationMode as 'novel' | 'general');
+              if (parsed.glossaryText !== undefined) setGlossaryText(parsed.glossaryText as string);
+              if (parsed.domainPreset !== undefined) setDomainPreset(parsed.domainPreset as DomainPreset);
+              if (parsed.preserveDialogueLayout !== undefined) setPreserveDialogueLayout(parsed.preserveDialogueLayout as boolean);
+            });
+          } catch {
+            await alert('JSON 파일 형식이 올바르지 않습니다.');
+          } finally {
+            input.value = '';
+          }
+        })();
+      };
+      reader.readAsText(file);
+    })();
   };
 
   const importDocument = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files?.length) return;
 
-    if (!confirm(`${files.length}개의 문서를 현재 프로젝트 챕터 목록에 추가하시겠습니까?`)) {
+    const proceed = await confirm(`${files.length}개의 문서를 현재 프로젝트 챕터 목록에 추가하시겠습니까?`, '문서 가져오기');
+    if (!proceed) {
       event.target.value = '';
       return;
     }
@@ -983,7 +876,7 @@ export default function Home() {
     setLoading(true);
     setStatusMsg('IMPORTING FILES');
     try {
-      const newChapters: any[] = [];
+      const newChapters: ChapterEntry[] = [];
 
       for (const file of Array.from(files)) {
         const formData = new FormData();
@@ -1030,7 +923,7 @@ export default function Home() {
         });
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : '문서 가져오기 실패');
+      await alert(error instanceof Error ? error.message : '문서 가져오기 실패');
     } finally {
       setLoading(false);
       setStatusMsg('');
@@ -1040,7 +933,8 @@ export default function Home() {
 
   const batchTranslateAll = async () => {
     if (!chapters.length) return;
-    if (!confirm(`${chapters.length}개 챕터를 순차 번역할까요?`)) return;
+    const startBatch = await confirm(`${chapters.length}개 챕터를 순차 번역할까요?`, '일괄 번역');
+    if (!startBatch) return;
 
     setLoading(true);
     let successCount = 0;
@@ -1049,7 +943,10 @@ export default function Home() {
     try {
       for (let index = 0; index < chapters.length; index += 1) {
         const chapter = chapters[index];
-        if (chapter.isDone && !confirm(`${chapter.name}은(는) 이미 완료되었습니다. 재번역할까요?`)) continue;
+        if (chapter.isDone) {
+          const redo = await confirm(`${chapter.name}은(는) 이미 완료되었습니다. 재번역할까요?`, '재번역');
+          if (!redo) continue;
+        }
         
         openChapter(index);
         setStatusMsg(`BATCH ${index + 1}/${chapters.length}`);
@@ -1081,22 +978,21 @@ export default function Home() {
           }
 
           successCount++;
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error(`Batch error at idx ${index}:`, err);
-          patchChapterAtIndex(index, { error: err.message || 'Error' });
+          const msg = err instanceof Error ? err.message : 'Error';
+          patchChapterAtIndex(index, { error: msg });
           failCount++;
         }
       }
-      alert(`일괄 번역 종료: 성공 ${successCount}, 실패 ${failCount}`);
+      await alert(`일괄 번역 종료: 성공 ${successCount}, 실패 ${failCount}`, '일괄 번역');
     } catch (error) {
-      alert(error instanceof Error ? error.message : '일괄 작업 중 치명적 오류 발생');
+      await alert(error instanceof Error ? error.message : '일괄 작업 중 치명적 오류 발생');
     } finally {
       setLoading(false);
       setStatusMsg('');
     }
   };
-
-  const [showExportOptions, setShowExportOptions] = useState(false);
 
   const downloadAllResults = (format: 'txt' | 'md' | 'json' | 'html' | 'csv' = 'md') => {
     if (!chapters.length) return;
@@ -1149,12 +1045,13 @@ export default function Home() {
           provider: apiKeys.claude ? 'claude' : provider,
           apiKey: apiKeys.claude || apiKeys[provider] || '',
           mode: translationMode,
-        })
+        }),
+        { stream: true, onDelta: (s) => setResult(s) }
       );
       setResult(refined);
       patchActiveChapter({ result: refined, isDone: true, stageProgress: 5 });
     } catch (error) {
-      alert(error instanceof Error ? error.message : '다듬기 실패');
+      await alert(error instanceof Error ? error.message : '다듬기 실패');
     } finally {
       setLoading(false);
       setStatusMsg('');
@@ -1177,7 +1074,71 @@ export default function Home() {
       });
       setBackResult(reversed);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '역번역 검사 실패');
+      await alert(error instanceof Error ? error.message : '역번역 검사 실패');
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+    }
+  };
+
+  const runCompareB = async () => {
+    if (!source.trim()) return;
+    const altProvider = provider === 'openai' ? 'claude' : 'openai';
+    if (!apiKeys[altProvider] && !apiKeys[provider]) {
+      await alert('비교 B안을 만들려면 해당 엔진 API 키를 설정해 주세요.');
+      return;
+    }
+    setLoading(true);
+    setStatusMsg('COMPARE B');
+    try {
+      const b = await requestTranslation(
+        buildTranslationPayload({
+          text: source,
+          from,
+          to,
+          provider: apiKeys[altProvider] ? altProvider : provider,
+          apiKey: apiKeys[altProvider] ? apiKeys[altProvider] : apiKeys[provider] || '',
+          mode: translationMode,
+        })
+      );
+      setCompareResultB(b);
+    } catch (error) {
+      await alert(error instanceof Error ? error.message : '비교 B안 실패');
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+    }
+  };
+
+  const runChunkedTranslate = async () => {
+    if (!source.trim()) return;
+    const ok = await confirm(
+      '긴 원고를 약 6000자 단위로 나눠 순서대로 번역한 뒤 이어 붙입니다. 계속할까요?',
+      '분할 번역'
+    );
+    if (!ok) return;
+    const chunks = splitTextIntoChunks(source, 6000, 400);
+    setLoading(true);
+    let acc = '';
+    try {
+      for (let i = 0; i < chunks.length; i++) {
+        setStatusMsg(`CHUNK ${i + 1}/${chunks.length}`);
+        const part = await requestTranslation(
+          buildTranslationPayload({
+            text: chunks[i],
+            from,
+            to,
+            provider,
+            apiKey: apiKeys[provider] || '',
+            mode: translationMode,
+          })
+        );
+        acc += (acc ? '\n\n' : '') + part;
+        setResult(acc);
+      }
+      patchActiveChapter({ result: acc, isDone: true, stageProgress: 5 });
+    } catch (error) {
+      await alert(error instanceof Error ? error.message : '분할 번역 실패');
     } finally {
       setLoading(false);
       setStatusMsg('');
@@ -1189,7 +1150,7 @@ export default function Home() {
   const headerChipSurface = backgroundMode === 'glacial' ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.06)';
   const accentTextColor = backgroundMode === 'glacial' ? '#2563eb' : '#93c5fd';
   const activeChapter = activeChapterIndex !== null ? chapters[activeChapterIndex] : null;
-  const completedChapters = chapters.filter((chapter: any) => chapter.isDone).length;
+  const completedChapters = chapters.filter((chapter) => chapter.isDone).length;
   const completionRate = chapters.length ? Math.round((completedChapters / chapters.length) * 100) : 0;
   const workspaceName = projectName.trim() || 'Untitled Narrative Workspace';
   const providerLabel = PROVIDERS.find((item) => item.id === provider)?.label || provider.toUpperCase();
@@ -1206,10 +1167,40 @@ export default function Home() {
     ? `Story Bible 누적 ${storySummary.split('\n---\n').length}블록`
     : 'Story Bible 아직 비어 있음';
 
+  const handleChapterRemove = (e: React.MouseEvent, idx: number) => {
+    e.stopPropagation();
+    const nextChapters = chapters.filter((_, chapterIndex) => chapterIndex !== idx);
+    setChapters(nextChapters);
+
+    if (activeChapterIndex === idx) {
+      const fallbackIndex = nextChapters.length ? Math.min(idx, nextChapters.length - 1) : null;
+      openChapter(fallbackIndex, nextChapters);
+      return;
+    }
+
+    if (activeChapterIndex !== null && activeChapterIndex > idx) {
+      setActiveChapterIndex(activeChapterIndex - 1);
+    }
+  };
+
   return (
     <div className={`min-h-screen theme-${backgroundMode} font-body ${isZenMode ? 'zen-mode' : ''}`}>
       <header className="fixed left-0 right-0 top-0 z-50 flex h-20 items-center justify-between px-4 lg:px-6 glass-panel border-t-0 border-x-0 rounded-none">
         <div className="flex min-w-0 items-center gap-4">
+          {!isZenMode && (
+            <button
+              type="button"
+              className="lg:hidden rounded-xl px-3 py-2 text-sm font-bold backdrop-blur-xl theme-pill"
+              style={{ color: headerMutedColor }}
+              aria-label="챕터 및 맥락 패널 열기"
+              onClick={() => {
+                setShowMobileDrawer(true);
+                setMobileTab('chapters');
+              }}
+            >
+              ☰
+            </button>
+          )}
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-indigo-500 text-sm font-black text-white shadow-lg shadow-blue-500/20">
             EH
           </div>
@@ -1253,15 +1244,46 @@ export default function Home() {
             ))}
           </div>
           {isAuthLoaded && !userId && (
-            <SignInButton mode="modal">
-              <button className="rounded-full bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110">
-                시작하기
+            <button
+              type="button"
+              onClick={() => void signInWithGoogle()}
+              className="rounded-full bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110"
+            >
+              시작하기
+            </button>
+          )}
+          {isAuthLoaded && userId && authUser && (
+            <div className="flex items-center gap-2">
+              {authUser.photoURL ? (
+                <img
+                  src={authUser.photoURL}
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover shadow-lg"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-blue-600 to-indigo-500 text-xs font-bold text-white shadow-lg"
+                  aria-hidden
+                >
+                  {(authUser.email ?? authUser.displayName ?? '?').slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] backdrop-blur-xl transition-all hover:brightness-110"
+                style={{ background: headerChipSurface, color: headerMutedColor }}
+              >
+                로그아웃
               </button>
-            </SignInButton>
+            </div>
           )}
-          {isAuthLoaded && userId && (
-            <UserButton appearance={{ elements: { userButtonAvatarBox: 'shadow-lg w-9 h-9' } }} />
-          )}
+          {authError ? (
+            <span className="hidden max-w-[140px] truncate text-[9px] text-red-500 lg:inline" title={authError}>
+              {authError}
+            </span>
+          ) : null}
 
           <button 
             onClick={() => setIsZenMode(!isZenMode)}
@@ -1282,84 +1304,65 @@ export default function Home() {
         </div>
       </header>
 
+      <MobileWorkspaceDrawer
+        open={showMobileDrawer && !isZenMode}
+        onClose={() => setShowMobileDrawer(false)}
+        tab={mobileTab}
+        onTab={setMobileTab}
+        backgroundMode={backgroundMode}
+        childrenChapters={
+          <ChapterSidebar
+            chapters={chapters}
+            activeChapterIndex={activeChapterIndex}
+            loading={loading}
+            showExportOptions={showExportOptions}
+            onToggleExport={() => setShowExportOptions((p) => !p)}
+            onBatchTranslate={() => void batchTranslateAll()}
+            onImportDocument={importDocument}
+            onDownloadAll={downloadAllResults}
+            onOpenChapter={(idx) => {
+              openChapter(idx);
+              setShowMobileDrawer(false);
+            }}
+            onRemoveChapter={handleChapterRemove}
+          />
+        }
+        childrenContext={
+          <ContextSidebar
+            worldContext={worldContext}
+            setWorldContext={setWorldContext}
+            characterProfiles={characterProfiles}
+            setCharacterProfiles={setCharacterProfiles}
+            storySummary={storySummary}
+            setStorySummary={setStorySummary}
+            showCharacters={showCharacters}
+            setShowCharacters={setShowCharacters}
+            showSummary={showSummary}
+            setShowSummary={setShowSummary}
+            accentTextColor={accentTextColor}
+            history={history}
+            setFrom={setFrom}
+            setTo={setTo}
+            setHistory={setHistory}
+          />
+        }
+      />
+
       <main className="flex h-[calc(100vh-80px)] overflow-hidden pt-20">
-        {/* Left Sidebar: Chapters */}
         {!isZenMode && (
           <aside className="w-64 border-r border-gray-900/50 bg-sidebar overflow-y-auto p-4 hidden lg:block glass-panel border-y-0 border-l-0 rounded-none">
-            <div className="flex flex-col gap-2 mb-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="theme-kicker">Chapters</h3>
-                  <label className="theme-pill cursor-pointer rounded-xl px-3 py-2 text-[10px] font-bold transition-colors hover:brightness-105" title="지원 형식: txt, md, epub, pdf, docx">
-                    <span className="text-[10px]">➕ 문서 읽어오기</span>
-                    <input type="file" multiple onChange={importDocument} className="hidden" accept=".txt,.md,.epub,.pdf,.docx" />
-                  </label>
-                </div>
-                <div className="text-[8px] opacity-60 text-right uppercase tracking-widest mt-1">
-                  5개 대표형식 (TXT, MD, EPUB, PDF, DOCX)
-                </div>
-              </div>
-            </div>
-
-            {chapters.length > 0 && (
-              <div className="flex flex-col gap-2 mb-3">
-                <div className="flex gap-2">
-                  <button onClick={batchTranslateAll} disabled={loading} className="flex-1 rounded-xl bg-linear-to-r from-blue-600/80 to-indigo-600/80 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-white transition-all hover:brightness-110">
-                    ALL BATCH
-                  </button>
-                  <button onClick={() => setShowExportOptions(!showExportOptions)} className="theme-pill flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all hover:brightness-105">
-                    EXPORT (5형식)
-                  </button>
-                </div>
-                {showExportOptions && (
-                  <div className="grid grid-cols-5 gap-1 animate-in fade-in slide-in-from-top-2">
-                    {['txt', 'md', 'json', 'html', 'csv'].map((fmt) => (
-                      <button key={fmt} onClick={() => downloadAllResults(fmt as any)} className="theme-pill text-[8px] py-1.5 rounded-lg font-bold uppercase hover:bg-white/10 transition-colors">
-                        {fmt}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <div className="space-y-1">
-              {chapters.length === 0 && (
-                <div className="theme-text-secondary py-10 text-center text-[10px] italic">불러온 파일이 없습니다.</div>
-              )}
-              {chapters.map((ch, idx) => (
-                <div 
-                  key={idx}
-                  onClick={() => openChapter(idx)}
-                  className={`chapter-item group flex cursor-pointer items-center justify-between rounded-xl border p-2.5 transition-all ${activeChapterIndex === idx ? 'chapter-item-active' : ''}`}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <span className={`chapter-index rounded px-1 text-[9px] font-mono ${ch.isDone ? 'chapter-index-done' : 'opacity-70'}`}>
-                      {ch.isDone ? '✓' : (idx + 1)}
-                    </span>
-                    <span className="truncate text-xs font-medium">{ch.name}</span>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const nextChapters = chapters.filter((_: any, chapterIndex: number) => chapterIndex !== idx);
-                      setChapters(nextChapters);
-
-                      if (activeChapterIndex === idx) {
-                        const fallbackIndex = nextChapters.length ? Math.min(idx, nextChapters.length - 1) : null;
-                        openChapter(fallbackIndex, nextChapters);
-                        return;
-                      }
-
-                      if (activeChapterIndex !== null && activeChapterIndex > idx) {
-                        setActiveChapterIndex(activeChapterIndex - 1);
-                      }
-                    }}
-                    className="theme-text-secondary p-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
-                  >✕</button>
-                </div>
-              ))}
-            </div>
+            <ChapterSidebar
+              chapters={chapters}
+              activeChapterIndex={activeChapterIndex}
+              loading={loading}
+              showExportOptions={showExportOptions}
+              onToggleExport={() => setShowExportOptions((p) => !p)}
+              onBatchTranslate={() => void batchTranslateAll()}
+              onImportDocument={importDocument}
+              onDownloadAll={downloadAllResults}
+              onOpenChapter={(idx) => openChapter(idx)}
+              onRemoveChapter={handleChapterRemove}
+            />
           </aside>
         )}
 
@@ -1394,6 +1397,11 @@ export default function Home() {
                   <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">
                     {cloudSyncEnabled ? 'Cloud Sync 활성' : '로컬 작업 모드'}
                   </div>
+                  {lastApproxTokens != null && (
+                    <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">
+                      직전 요청 ≈ {lastApproxTokens.toLocaleString()} 토큰 (추정)
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1406,6 +1414,15 @@ export default function Home() {
                 <div className={`mt-4 rounded-2xl px-3 py-3 text-[11px] font-semibold ${loading ? 'loading-ribbon' : 'theme-pill'}`}>
                   {loading ? '엔진이 결과를 정리하는 중입니다.' : '변경 내용은 조용히 로컬 상태와 동기화됩니다.'}
                 </div>
+                {cloudSyncEnabled && (
+                  <p className="mt-3 text-[11px] leading-relaxed theme-text-secondary">
+                    클라우드:{' '}
+                    {cloudSyncStatus === 'saving' && '저장 중…'}
+                    {cloudSyncStatus === 'ok' && `마지막 성공 ${cloudSyncDetail}`}
+                    {cloudSyncStatus === 'error' && <span className="text-red-500">{cloudSyncDetail}</span>}
+                    {cloudSyncStatus === 'idle' && '대기 중'}
+                  </p>
+                )}
               </div>
 
               <div className="metric-card glass-panel rounded-4xl p-5">
@@ -1432,10 +1449,10 @@ export default function Home() {
             <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
                <div className="themed-insight glass-panel flex items-center justify-between gap-5 rounded-4xl p-5">
                  <div>
-                    <h4 className="theme-kicker mb-2">AI Style Feedback</h4>
+                    <h4 className="theme-kicker mb-2">휴리스틱 문체 스캔 (비 LLM)</h4>
                     <p className="text-sm font-medium theme-text-primary">
-                      이 글은 <span style={{ color: accentTextColor }}>{styleAnalysis.genre}</span> 장르의{' '}
-                      <span style={{ color: accentTextColor }}>{styleAnalysis.tone}</span> 톤을 가지고 있습니다.
+                      패턴 기반 추정: <span style={{ color: accentTextColor }}>{styleAnalysis.genre}</span> 계열,{' '}
+                      <span style={{ color: accentTextColor }}>{styleAnalysis.tone}</span> 성향입니다.
                     </p>
                  </div>
                  <div className="flex gap-2">
@@ -1475,8 +1492,28 @@ export default function Home() {
                       <div className="flex gap-2 items-center">
                         <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} 
                           placeholder="프로젝트명" className="theme-field flex-1 rounded-lg px-3 py-2 text-xs outline-none" />
-                        <button onClick={() => { if(confirm('초기화 하시겠습니까?')) { setProjectId(Date.now().toString()); setProjectName(''); setChapters([]); setSource(''); setResult(''); setStorySummary(''); setWorldContext(''); setCharacterProfiles(''); setReferenceIds([]); } }}
-                          className="rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 px-3 py-2 text-[10px] font-bold text-white transition-all hover:brightness-110">신규 생성</button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void (async () => {
+                              const ok = await confirm('초기화 하시겠습니까?', '신규 프로젝트');
+                              if (!ok) return;
+                              setProjectId(Date.now().toString());
+                              setProjectName('');
+                              setChapters([]);
+                              setSource('');
+                              setResult('');
+                              setStorySummary('');
+                              setWorldContext('');
+                              setCharacterProfiles('');
+                              setReferenceIds([]);
+                              setGlossaryText('');
+                            })();
+                          }}
+                          className="rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 px-3 py-2 text-[10px] font-bold text-white transition-all hover:brightness-110"
+                        >
+                          신규 생성
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1506,6 +1543,54 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
+                  <p className="mt-3 text-[10px] leading-relaxed theme-text-secondary">
+                    BYOK: 키는 브라우저→서버로 전달되어 번역 API 호출에만 사용됩니다. 공용 PC에서는 자제하고 키를 안전하게 보관하세요.
+                  </p>
+                </div>
+                <div className="lg:col-span-3">
+                  <label className="theme-kicker mb-2 block">용어집 (한 줄에 하나: 원문 =&gt; 번역)</label>
+                  <textarea
+                    value={glossaryText}
+                    onChange={(e) => setGlossaryText(e.target.value)}
+                    rows={5}
+                    className="theme-field w-full rounded-lg p-3 text-xs outline-none font-mono"
+                    placeholder={'예:\n魔法少女 => 마법 소녀\n主人公 => 주인공'}
+                  />
+                </div>
+                <div className="lg:col-span-3">
+                  <NetworkBridgePanel
+                    universeOrigin={process.env.NEXT_PUBLIC_EH_UNIVERSE_ORIGIN ?? ''}
+                    getIdToken={getIdToken}
+                    projectId={projectId}
+                    projectName={projectName}
+                    chapters={chapters}
+                    worldContext={worldContext}
+                    characterProfiles={characterProfiles}
+                    storySummary={storySummary}
+                    glossaryText={glossaryText}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="theme-kicker block">일반 모드 도메인</label>
+                  <select
+                    value={domainPreset}
+                    onChange={(e) => setDomainPreset(e.target.value as DomainPreset)}
+                    className="theme-field w-full rounded-lg px-3 py-2 text-xs outline-none"
+                  >
+                    <option value="general">일반</option>
+                    <option value="legal">법률</option>
+                    <option value="it">IT</option>
+                    <option value="medical">의학</option>
+                  </select>
+                  <label className="flex items-start gap-2 text-[11px] theme-text-secondary cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={preserveDialogueLayout}
+                      onChange={(e) => setPreserveDialogueLayout(e.target.checked)}
+                    />
+                    <span>소설 모드에서 대사/지문 구획·따옴표 보존 지시 강화</span>
+                  </label>
                 </div>
                 <div className="space-y-4">
                    <label className="theme-kicker block">Settings</label>
@@ -1513,9 +1598,23 @@ export default function Home() {
                       {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                    </select>
                    <div className="flex gap-2">
-                      <button onClick={exportData} className="theme-pill flex-1 rounded-lg py-2 text-[9px] font-bold hover:brightness-105">EXTRACT</button>
+                      <button type="button" onClick={() => void exportData()} className="theme-pill flex-1 rounded-lg py-2 text-[9px] font-bold hover:brightness-105">EXTRACT</button>
                       <label className="theme-pill flex-1 cursor-pointer rounded-lg py-2 text-center text-[9px] font-bold hover:brightness-105">INJECT<input type="file" onChange={importData} className="hidden" /></label>
                    </div>
+                   <button
+                     type="button"
+                     className="theme-pill mt-2 w-full rounded-lg py-2 text-[9px] font-bold hover:brightness-105"
+                     onClick={() => {
+                       void (async () => {
+                         const res = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                         const data = (await res.json()) as { url?: string; error?: string };
+                         if (data.url) window.location.href = data.url;
+                         else await alert(data.error || 'Stripe 가격 ID가 없거나 설정되지 않았습니다.');
+                       })();
+                     }}
+                   >
+                     Stripe 구독 (선택)
+                   </button>
                 </div>
               </div>
             </div>
@@ -1596,61 +1695,77 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button onClick={analyzeStyle} disabled={!source.trim()} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">문체 분석</button>
-              <button onClick={refineResult} disabled={!result.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">최종 다듬기</button>
-              <button onClick={backTranslate} disabled={!result.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">역검수</button>
-              <button onClick={() => setIsCatMode((previous) => !previous)} className={`rounded-xl px-4 py-3 text-[10px] font-bold transition-all ${isCatMode ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-pill hover:brightness-105'}`}>
+              <button type="button" onClick={() => void runCompareB()} disabled={!source.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">
+                비교 B안
+              </button>
+              <button type="button" onClick={() => void runChunkedTranslate()} disabled={!source.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">
+                분할 번역
+              </button>
+              <button type="button" onClick={analyzeStyle} disabled={!source.trim()} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">문체 분석</button>
+              <button type="button" onClick={() => void refineResult()} disabled={!result.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">최종 다듬기</button>
+              <button type="button" onClick={() => void backTranslate()} disabled={!result.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">역검수</button>
+              <button type="button" onClick={() => setIsCatMode((previous) => !previous)} className={`rounded-xl px-4 py-3 text-[10px] font-bold transition-all ${isCatMode ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-pill hover:brightness-105'}`}>
                 {isCatMode ? '통합 보기' : '라인 비교'}
               </button>
             </div>
+            {compareResultB.trim() ? (
+              <div className="mt-4 rounded-3xl glass-panel p-4">
+                <div className="theme-kicker mb-2">비교 B안 (별도 엔진)</div>
+                <textarea readOnly value={compareResultB} className="result-pane theme-field w-full min-h-[120px] rounded-xl p-3 text-xs" />
+                <button type="button" className="mt-2 text-[10px] theme-text-secondary" onClick={() => setCompareResultB('')}>
+                  B안 지우기
+                </button>
+              </div>
+            ) : null}
           </div>
         </section>
 
-        {/* Right Sidebar */}
         {!isZenMode && (
           <aside className="w-80 glass-panel border-y-0 border-r-0 rounded-none overflow-y-auto p-6 hidden xl:block space-y-10 bg-sidebar">
-            <div className="space-y-4">
-              <h3 className="theme-kicker">World Lore</h3>
-              <textarea value={worldContext} onChange={(e) => setWorldContext(e.target.value)} className="theme-field editor-pane w-full h-32 rounded-xl p-4 text-[11px] leading-relaxed resize-none outline-none" />
-            </div>
-            <div className="space-y-4">
-              <h3 className="theme-kicker flex justify-between">Characters <button onClick={() => setShowCharacters(!showCharacters)} style={{ color: accentTextColor }}>Edit</button></h3>
-              {showCharacters && <textarea value={characterProfiles} onChange={(e) => setCharacterProfiles(e.target.value)} className="theme-field editor-pane w-full h-40 rounded-xl p-4 text-[10px] outline-none" />}
-            </div>
-            <div className="space-y-4">
-              <h3 className="theme-kicker flex justify-between">Story Bible <button onClick={() => setShowSummary(!showSummary)} style={{ color: accentTextColor }}>Edit</button></h3>
-              <p className="text-[11px] leading-relaxed theme-text-secondary">소설 모드 번역 후 자동 요약이 이어붙여집니다. 필요하면 여기서 직접 다듬을 수 있습니다.</p>
-              {showSummary && <textarea value={storySummary} onChange={(e) => setStorySummary(e.target.value)} className="theme-field editor-pane w-full h-40 rounded-xl p-4 text-[10px] outline-none" />}
-            </div>
-            <div className="pt-8 border-t border-white/5">
-              <HistoryComponent history={history} setFrom={setFrom} setTo={setTo} setHistory={setHistory} />
-            </div>
+            <ContextSidebar
+              worldContext={worldContext}
+              setWorldContext={setWorldContext}
+              characterProfiles={characterProfiles}
+              setCharacterProfiles={setCharacterProfiles}
+              storySummary={storySummary}
+              setStorySummary={setStorySummary}
+              showCharacters={showCharacters}
+              setShowCharacters={setShowCharacters}
+              showSummary={showSummary}
+              setShowSummary={setShowSummary}
+              accentTextColor={accentTextColor}
+              history={history}
+              setFrom={setFrom}
+              setTo={setTo}
+              setHistory={setHistory}
+            />
           </aside>
         )}
       </main>
 
-      {/* Overlays */}
-      {backResult && <div className="fixed bottom-10 right-10 z-50 w-96 glass-panel p-6 animate-in fade-in slide-in-from-bottom-5"><h4 className="theme-kicker mb-2" style={{ color: '#10b981' }}>Integrity Check</h4><div className="theme-text-primary max-h-60 overflow-y-auto text-xs leading-relaxed">{backResult}</div><button onClick={() => setBackResult('')} className="theme-text-secondary mt-4 text-[9px]">CLOSE</button></div>}
-    </div>
-  );
-}
+      {backResult && (
+        <div className="fixed bottom-10 right-10 z-50 w-96 glass-panel p-6 animate-in fade-in slide-in-from-bottom-5 max-h-[70vh] flex flex-col">
+          <h4 className="theme-kicker mb-2" style={{ color: '#10b981' }}>
+            Integrity Check
+          </h4>
+          <div className="theme-text-primary max-h-60 overflow-y-auto text-xs leading-relaxed">{backResult}</div>
+          <button type="button" onClick={() => setBackResult('')} className="theme-text-secondary mt-4 text-[9px] text-left">
+            CLOSE
+          </button>
+        </div>
+      )}
 
-function HistoryComponent({ history, setFrom, setTo, setHistory }: any) {
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h3 className="theme-kicker">Logs</h3>
-        <button onClick={() => setHistory([])} className="theme-text-secondary text-[9px]">CLEAR</button>
-      </div>
-      <div className="space-y-3">
-        {history.map((h: any, i: number) => (
-          <div key={i} className="p-4 glass-panel rounded-xl cursor-pointer group hover:border-purple-500/30 transition-all" onClick={() => { setFrom(h.from); setTo(h.to); }}>
-             <div className="theme-text-secondary mb-2 flex justify-between text-[8px]"><span>{new Date(h.time).toLocaleTimeString()}</span><span>{h.from}→{h.to}</span></div>
-             <p className="theme-text-primary truncate text-[10px]">{h.source}</p>
-          </div>
-        ))}
-        {history.length === 0 && <p className="theme-text-secondary py-4 text-center text-[10px] italic">최근 기록이 없습니다.</p>}
-      </div>
+      {dialog && (
+        <AppDialog
+          open
+          variant={dialog.kind === 'confirm' ? 'confirm' : 'alert'}
+          title={dialog.title ?? '알림'}
+          message={dialog.message}
+          onClose={dismiss}
+          onConfirm={confirmYes}
+          onAlertOk={alertOk}
+        />
+      )}
     </div>
   );
 }
