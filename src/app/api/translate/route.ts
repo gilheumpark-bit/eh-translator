@@ -73,10 +73,13 @@ ${text}
 Output ONLY the revised draft.`;
   } else if (stage === 4) {
     prompt = `${baseInstructions}
-MISSION: Stage 4 (Localization & Cultural Adaptation Expert).
-Your ultimate goal is Cultural Resonance. Identify idioms, metaphors, slang, jokes, or cultural nuances in the source text that sound awkward when translated literally.
-You MUST boldly adapt and localize these expressions so they feel completely native, natural, and culturally impactful to the target audience, all while keeping the intended core emotion and meaning.
-Do NOT be overly literal if it ruins the flow.
+MISSION: Stage 4 (Target Culture & Native Resonance Expert).
+Your ultimate goal is **Total Cultural Immersion into the ${to} native culture**.
+Analyze the source text for foreign idioms, wordplay, pop-culture references, historical contexts, and subtle social dynamics (like honorifics or politeness levels).
+You MUST completely transcreate these elements using equivalent cultural touchstones, idioms, and expressions that are highly natural to native ${to} speakers. 
+- If translating to Korean/Japanese, strictly calibrate honorifics/politeness levels between characters and adapt subtle emotional nuances.
+- If translating to English/Western languages, convert Eastern idioms into equivalent Western cultural idioms.
+If a literal translation is even slightly awkward or foreign-sounding, rewrite the sentence entirely from the perspective of a native ${to} writer, while protecting the core narrative facts.
 <source_text>
 ${sourceText}
 </source_text>
