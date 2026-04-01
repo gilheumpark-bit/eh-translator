@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+:root {
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: #374151 transparent;
+}
+
+.translate-btn {
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  transition: all 0.2s;
+}
+.translate-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+}
+.translate-btn:disabled {
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Zen Mode Immersive Styles */
+.zen-mode body {
+  background: #000;
+  overflow: hidden;
+}
+
+.zen-mode header {
+  opacity: 0.2;
+  transition: opacity 0.5s;
+}
+
+.zen-mode header:hover {
+  opacity: 1;
+}
+
+.zen-mode textarea {
+  font-family: 'Outfit', 'Georgia', serif;
+  font-size: 1.125rem; /* 18px */
+  line-height: 2;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.zen-mode ::selection {
+  background: rgba(139, 92, 246, 0.5);
+  color: #fff;
+}
+
+/* Scrollbar Hide for Zen */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
