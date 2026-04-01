@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NTE | Narrative Translation Engine</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-low": "#1b1b20",
+                        "secondary-container": "#602b9d",
+                        "primary-fixed-dim": "#cabeff",
+                        "outline-variant": "#48454e",
+                        "tertiary-container": "#101212",
+                        "surface-bright": "#39383e",
+                        "outline": "#938f98",
+                        "primary-fixed": "#e6deff",
+                        "on-secondary": "#460283",
+                        "secondary-fixed": "#eedbff",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "secondary": "#dab9ff",
+                        "surface-container-highest": "#35343a",
+                        "background": "#131318",
+                        "surface-variant": "#35343a",
+                        "on-secondary-fixed": "#2a0053",
+                        "on-primary-container": "#7f62ff",
+                        "surface-container-lowest": "#0e0e13",
+                        "primary-container": "#110046",
+                        "surface-dim": "#131318",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "on-surface-variant": "#c9c5ce",
+                        "surface-tint": "#cabeff",
+                        "secondary-fixed-dim": "#dab9ff",
+                        "primary": "#cabeff",
+                        "on-primary-fixed-variant": "#4717ca",
+                        "inverse-primary": "#603de2",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#5e289b",
+                        "inverse-surface": "#e4e1e9",
+                        "surface": "#131318",
+                        "on-surface": "#e4e1e9",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#2f3131",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-background": "#e4e1e9",
+                        "inverse-on-surface": "#303036",
+                        "on-primary": "#31009a",
+                        "tertiary": "#c6c6c7",
+                        "on-primary-fixed": "#1c0062",
+                        "on-tertiary-container": "#7c7d7d",
+                        "on-secondary-container": "#cfa7ff",
+                        "tertiary-fixed": "#e2e2e2",
+                        "surface-container-high": "#2a292f",
+                        "surface-container": "#1f1f25",
+                        "on-error": "#690005"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            background-color: rgba(19, 19, 24, 0.6);
+            border: 1px solid rgba(72, 69, 78, 0.15);
+        }
+        .nebula-gradient {
+            background: linear-gradient(135deg, #cabeff 0%, #dab9ff 100%);
+        }
+        .node-pulse {
+            box-shadow: 0 0 15px rgba(202, 190, 255, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen overflow-x-hidden selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="w-full pt-4 fixed top-0 left-0 z-[60] glass-panel border-none">
+<div class="flex justify-between items-center px-8 w-full max-w-md mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#cabeff]" style="font-variation-settings: 'FILL' 1;">blur_on</span>
+<span class="text-[#cabeff] tracking-[0.2em] font-black text-lg uppercase font-headline">NTE</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#cabeff]/60 hover:opacity-80 transition-opacity active:scale-95 duration-300">
+<span class="material-symbols-outlined">history</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/20 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close up profile portrait of a minimalist digital human avatar with soft neon rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsJ41zx_dzN23q5kl3hmF8J99kD62dHuZrI0rI22-6QcA5mo9JNu7JJWZpykrT1HssFbhHiVPOvesNd5AAtlIAKXrgUXupNUc0B2g5f37cBxIURNQsNwnRVcs4p2Sj8ThEIfdy5OA14P4V7mogQuxfFuTUQvqtYLBC_iA9mwlypJkOIw8lK0rbB3nKehIUDMVYOAdZIaiECox_Ygb1iv-tdlgldMHc8QNBYkCXOdHkmVH7TD689dY44OezEXHSlxSGfqwPvC8ELvg"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-md mx-auto space-y-12">
+<!-- Engine Status & Context Header -->
+<section class="space-y-2">
+<div class="flex items-center gap-2 text-primary-fixed-dim uppercase tracking-widest text-[10px] font-bold">
+<span class="w-2 h-2 rounded-full bg-primary node-pulse"></span>
+                Engine Active: Narrative Core v4.2
+            </div>
+<h1 class="text-display-lg text-4xl font-extrabold tracking-[-0.04em] leading-tight text-on-surface">
+                Quantum <br/>Refinement.
+            </h1>
+</section>
+<!-- Main Editor Area (Asymmetric Bento Grid) -->
+<div class="grid grid-cols-6 gap-4">
+<!-- Source Card -->
+<div class="col-span-6 glass-panel rounded-3xl p-6 space-y-4">
+<div class="flex justify-between items-start">
+<span class="text-label-sm text-outline tracking-wider uppercase font-bold text-[10px]">Source Input</span>
+<span class="bg-primary/10 text-primary px-2 py-1 rounded text-[10px] font-bold tracking-tighter italic">EN-US</span>
+</div>
+<p class="text-lg leading-relaxed font-light text-on-surface-variant">
+                    The silence between the stars isn't empty; it's a heavy, resonant frequency that vibrates through the hull like a ghost's heartbeat.
+                </p>
+</div>
+<!-- Result Tab Switcher -->
+<div class="col-span-6 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full nebula-gradient text-on-primary font-bold text-xs shadow-lg shadow-primary/20">Poetic</button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full glass-panel text-on-surface-variant font-medium text-xs hover:bg-surface-container-high transition-all">Technical</button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full glass-panel text-on-surface-variant font-medium text-xs hover:bg-surface-container-high transition-all">Noir</button>
+<button class="whitespace-nowrap px-6 py-2.5 rounded-full glass-panel text-on-surface-variant font-medium text-xs hover:bg-surface-container-high transition-all">Cyber</button>
+</div>
+<!-- Translation Result Card -->
+<div class="col-span-6 bg-surface-container-high/40 rounded-3xl p-8 space-y-6 border border-primary/10 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4">
+<div class="flex flex-col items-end">
+<span class="text-[10px] text-primary/60 font-black uppercase tracking-widest">Confidence</span>
+<span class="text-2xl font-black text-primary">98.4<span class="text-sm">%</span></span>
+</div>
+</div>
+<div class="space-y-4">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<p class="text-2xl font-semibold leading-snug tracking-tight text-on-surface">
+                        L'absence de son entre les astres n'est pas un vide; c'est une fréquence lourde et vibrante qui résonne comme le pouls d'un spectre.
+                    </p>
+</div>
+<div class="flex gap-4 pt-4 border-t border-outline-variant/10">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border-2 border-surface-container-high bg-primary-container"></div>
+<div class="w-6 h-6 rounded-full border-2 border-surface-container-high bg-secondary-container"></div>
+</div>
+<span class="text-[11px] text-outline font-medium">Synced with 12 semantic nodes</span>
+</div>
+</div>
+<!-- Narrative Nodes Visualization -->
+<div class="col-span-4 glass-panel rounded-3xl p-6 h-40 flex items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 opacity-20">
+<div class="absolute top-1/2 left-1/4 w-1 h-1 bg-secondary rounded-full node-pulse"></div>
+<div class="absolute top-1/3 left-1/2 w-1.5 h-1.5 bg-primary rounded-full node-pulse"></div>
+<div class="absolute bottom-1/4 right-1/3 w-1 h-1 bg-secondary rounded-full node-pulse"></div>
+<svg class="w-full h-full stroke-outline-variant/20 stroke-1 fill-none">
+<path d="M40 80 Q 80 40 120 60 T 200 40" stroke-dasharray="4 4"></path>
+</svg>
+</div>
+<div class="text-center z-10">
+<span class="text-[10px] text-outline font-bold uppercase tracking-widest block mb-1">Tone Mapping</span>
+<span class="text-sm font-semibold text-secondary">Ethereal / Melancholic</span>
+</div>
+</div>
+<!-- Quick Action Card -->
+<div class="col-span-2 glass-panel rounded-3xl flex flex-col items-center justify-center gap-2 hover:bg-primary/5 transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:-translate-y-1 transition-transform">content_copy</span>
+<span class="text-[10px] font-bold uppercase tracking-tighter">Copy</span>
+</div>
+</div>
+<!-- Narrative Context Section -->
+<section class="space-y-6">
+<h3 class="text-label-md text-outline font-black uppercase tracking-[0.2em] px-2">Sub-Text Context</h3>
+<div class="bg-surface-container-lowest rounded-3xl p-6 space-y-4 border border-outline-variant/5">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-2xl bg-secondary-container/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div class="space-y-1">
+<h4 class="text-sm font-bold text-on-surface">Psychological Resonance</h4>
+<p class="text-xs text-outline leading-relaxed">
+                            The use of 'ghost's heartbeat' implies a haunting presence rather than just scientific observation. This creates an immediate emotional anchor for the reader.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-28 right-8 w-14 h-14 rounded-full nebula-gradient flex items-center justify-center text-on-primary shadow-2xl shadow-primary/40 z-[70] hover:scale-110 active:scale-90 transition-all duration-300">
+<span class="material-symbols-outlined text-3xl">magic_button</span>
+</button>
+<!-- Narrative Context Bottom Sheet (Peek) -->
+<div class="fixed bottom-0 left-0 w-full z-[80] pointer-events-none">
+<div class="max-w-md mx-auto px-4">
+<div class="glass-panel rounded-t-[2.5rem] p-6 pb-2 pointer-events-auto shadow-[0_-20px_40px_rgba(0,0,0,0.5)] border-t border-white/10">
+<div class="w-12 h-1 bg-outline-variant/30 rounded-full mx-auto mb-6"></div>
+<div class="flex justify-between items-center mb-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">hub</span>
+<span class="text-sm font-black uppercase tracking-widest text-on-surface">Narrative Nodes</span>
+</div>
+<span class="text-[10px] text-primary bg-primary/10 px-2 py-1 rounded font-bold">12 Active</span>
+</div>
+<div class="grid grid-cols-2 gap-3 mb-10">
+<div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/5">
+<span class="text-[10px] text-outline block mb-1">Pacing</span>
+<span class="text-xs font-bold">Languid &amp; Flowing</span>
+</div>
+<div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/5">
+<span class="text-[10px] text-outline block mb-1">Mood</span>
+<span class="text-xs font-bold">Cosmic Dread</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-1/2 -translate-x-1/2 flex justify-around items-center px-4 py-3 z-50 w-[90%] max-w-md bg-[#131318]/60 backdrop-blur-2xl rounded-full border border-white/10 shadow-[0_20px_40px_rgba(19,19,24,0.4)]">
+<button class="flex items-center justify-center text-[#cabeff] bg-[#cabeff]/10 rounded-full w-12 h-12 shadow-[0_0_15px_rgba(202,190,255,0.3)] hover:text-[#dab9ff] hover:-translate-y-1 transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</button>
+<button class="flex items-center justify-center text-[#cabeff]/40 w-12 h-12 hover:text-[#dab9ff] hover:-translate-y-1 transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined">translate</span>
+</button>
+<button class="flex items-center justify-center text-[#cabeff]/40 w-12 h-12 hover:text-[#dab9ff] hover:-translate-y-1 transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined">hub</span>
+</button>
+<button class="flex items-center justify-center text-[#cabeff]/40 w-12 h-12 hover:text-[#dab9ff] hover:-translate-y-1 transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined">person</span>
+</button>
+</nav>
+<!-- Background Decoration -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+<div class="absolute top-[-10%] left-[-20%] w-[80%] h-[80%] bg-primary/5 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-10%] right-[-20%] w-[60%] h-[60%] bg-secondary/5 blur-[100px] rounded-full"></div>
+</div>
+</body></html>

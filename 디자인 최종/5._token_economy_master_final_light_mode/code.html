@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NTE | Token Economy Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#b2c5ff",
+              "primary": "#003d9b",
+              "surface-dim": "#d8dadc",
+              "primary-fixed": "#dae2ff",
+              "secondary": "#4c5d8d",
+              "inverse-on-surface": "#eff1f3",
+              "inverse-primary": "#b2c5ff",
+              "on-secondary": "#ffffff",
+              "on-surface-variant": "#434654",
+              "on-primary-fixed-variant": "#0040a2",
+              "surface-container": "#eceef0",
+              "on-secondary-fixed-variant": "#344573",
+              "on-tertiary-fixed-variant": "#812800",
+              "error-container": "#ffdad6",
+              "surface-variant": "#e0e3e5",
+              "tertiary": "#7b2600",
+              "on-tertiary-container": "#ffc6b2",
+              "outline": "#737685",
+              "error": "#ba1a1a",
+              "on-error": "#ffffff",
+              "on-secondary-container": "#415382",
+              "outline-variant": "#c3c6d6",
+              "on-tertiary-fixed": "#380d00",
+              "on-secondary-fixed": "#021945",
+              "surface": "#f7f9fb",
+              "surface-container-lowest": "#ffffff",
+              "inverse-surface": "#2d3133",
+              "tertiary-fixed": "#ffdbcf",
+              "tertiary-fixed-dim": "#ffb59b",
+              "primary-container": "#0052cc",
+              "secondary-container": "#b6c8fe",
+              "surface-bright": "#f7f9fb",
+              "on-surface": "#191c1e",
+              "on-background": "#191c1e",
+              "on-primary-fixed": "#001848",
+              "tertiary-container": "#a33500",
+              "on-tertiary": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface-tint": "#0c56d0",
+              "secondary-fixed": "#dae2ff",
+              "secondary-fixed-dim": "#b4c5fb",
+              "on-primary-container": "#c4d2ff",
+              "surface-container-low": "#f2f4f6",
+              "surface-container-high": "#e6e8ea",
+              "surface-container-highest": "#e0e3e5",
+              "background": "#f7f9fb",
+              "on-primary": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 12px 40px rgba(0, 61, 155, 0.06);
+        }
+        .neo-flow-gradient {
+            background: linear-gradient(90deg, #003d9b 0%, #b6c8fe 100%);
+        }
+        .ambient-glow {
+            box-shadow: 0 0 50px -12px rgba(0, 61, 155, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed antialiased">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,61,155,0.06)]">
+<div class="flex justify-between items-center px-8 py-4 max-w-[1440px] mx-auto">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-bold tracking-tighter text-slate-900 dark:text-slate-50">NTE</span>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-blue-700 dark:text-blue-400 font-semibold border-b-2 border-blue-700 font-['Manrope'] text-sm tracking-tight px-1 py-1" href="#">Dashboard</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 font-['Manrope'] text-sm tracking-tight px-1 py-1 transition-colors" href="#">Archive</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 font-['Manrope'] text-sm tracking-tight px-1 py-1 transition-colors" href="#">Engines</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 font-['Manrope'] text-sm tracking-tight px-1 py-1 transition-colors" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-slate-100/50 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-slate-600">notifications</span>
+</button>
+<button class="p-2 hover:bg-slate-100/50 rounded-full transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-slate-600">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden ml-2 ring-2 ring-primary/10">
+<img alt="User profile" data-alt="Close up portrait of a professional male executive with a kind smile and sharp focus, clean office background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqHTTfmzXMtZMa1-z1oESgXDAoCmdF9E5LAam6cYxm5K7xBVjBliqeyuyCM4C1NLcFdvd9Got2dx7GyfWJhCLZTuT57hfPJXIrWh_MgwSvlbK-KSY1OKaBLPEuQigdS9RcziVTF5Ad0yMJ3JpT-W838lk381EbKz8Ws1Nj-fIK_cwdBI9dt2X-tg0n3iK0TtdUQzdT3tSwzxAmm9UbzFhBW8uX6U5ciRXDOF0wFHJgDhGlKmJ4Vyy5bvifR_aNUHyxjTPRwUUb9UA"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- SideNavBar (Hidden on Mobile, but defined for structure) -->
+<aside class="hidden lg:flex fixed left-0 top-0 h-full w-20 z-40 flex-col items-center py-24 gap-8 bg-slate-50/80 backdrop-blur-lg border-r border-slate-200/10">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl text-blue-700 bg-white shadow-sm transition-transform duration-300 hover:translate-x-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-800 transition-transform duration-300 hover:translate-x-1">
+<span class="material-symbols-outlined">archive</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-800 transition-transform duration-300 hover:translate-x-1">
+<span class="material-symbols-outlined">settings_input_component</span>
+</button>
+<button class="w-12 h-12 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-800 transition-transform duration-300 hover:translate-x-1">
+<span class="material-symbols-outlined">analytics</span>
+</button>
+</aside>
+<main class="pt-28 pb-12 px-6 md:px-12 lg:ml-20 max-w-[1600px] mx-auto">
+<!-- Hero Header -->
+<header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<span class="text-xs font-bold tracking-[0.2em] text-primary uppercase mb-2 block">System Status: Optimal</span>
+<h1 class="text-5xl md:text-6xl font-black tracking-tighter text-on-surface leading-tight">Token Economy</h1>
+<p class="text-on-surface-variant max-w-xl mt-4 font-medium text-lg">Real-time performance diagnostics and global resource allocation for Narrative Translation Engine.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-white font-semibold rounded-xl active:scale-95 transition-all shadow-lg shadow-primary/20">
+                    Export Report
+                </button>
+<button class="px-6 py-3 bg-surface-container-low text-primary font-semibold rounded-xl border border-outline-variant/15 hover:bg-surface-container-high transition-colors">
+                    View Logs
+                </button>
+</div>
+</header>
+<!-- Bento Grid Analytics -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Live Consumption (Neon flow diagnostics) -->
+<div class="md:col-span-8 glass-card rounded-full p-8 relative overflow-hidden group">
+<div class="relative z-10 flex flex-col h-full">
+<div class="flex justify-between items-start mb-12">
+<div>
+<h3 class="text-xl font-bold tracking-tight mb-1">Live Consumption</h3>
+<p class="text-sm text-on-surface-variant">Real-time throughput (Tokens/sec)</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded-full tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Live
+                            </span>
+</div>
+</div>
+<!-- Visualization Placeholder -->
+<div class="flex-grow flex items-end gap-1 h-48 mb-8">
+<div class="flex-1 bg-primary/10 rounded-t-lg transition-all duration-500 hover:bg-primary/30 h-[40%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t-lg transition-all duration-500 hover:bg-primary/40 h-[65%]"></div>
+<div class="flex-1 bg-primary/10 rounded-t-lg transition-all duration-500 hover:bg-primary/30 h-[50%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t-lg transition-all duration-500 hover:bg-primary/60 h-[85%]"></div>
+<div class="flex-1 bg-primary/20 rounded-t-lg transition-all duration-500 hover:bg-primary/40 h-[70%]"></div>
+<div class="flex-1 neo-flow-gradient rounded-t-lg transition-all duration-500 h-[95%] shadow-lg"></div>
+<div class="flex-1 bg-primary/30 rounded-t-lg transition-all duration-500 hover:bg-primary/50 h-[60%]"></div>
+<div class="flex-1 bg-primary/15 rounded-t-lg transition-all duration-500 hover:bg-primary/35 h-[45%]"></div>
+<div class="flex-1 bg-primary/25 rounded-t-lg transition-all duration-500 hover:bg-primary/45 h-[80%]"></div>
+<div class="flex-1 bg-primary/10 rounded-t-lg transition-all duration-500 hover:bg-primary/30 h-[55%]"></div>
+</div>
+<div class="grid grid-cols-3 gap-6 pt-6 border-t border-outline-variant/10">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Avg. Latency</p>
+<p class="text-2xl font-black text-primary">124ms</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Peak Output</p>
+<p class="text-2xl font-black text-primary">8.4M</p>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Queue Size</p>
+<p class="text-2xl font-black text-primary">0.02%</p>
+</div>
+</div>
+</div>
+<div class="absolute -right-20 -bottom-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none group-hover:bg-primary/10 transition-colors"></div>
+</div>
+<!-- System Advisory Alerts -->
+<div class="md:col-span-4 bg-primary text-white rounded-full p-8 shadow-2xl shadow-primary/30 relative overflow-hidden">
+<div class="relative z-10 flex flex-col h-full">
+<div class="mb-8">
+<span class="material-symbols-outlined text-4xl mb-4">info</span>
+<h3 class="text-2xl font-black tracking-tight leading-tight">System Advisory</h3>
+</div>
+<div class="space-y-4">
+<div class="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/20 transition-colors">
+<p class="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Alert #204</p>
+<p class="text-sm font-medium">Auto-scaling group expanded in Asia-Pacific (Tokyo).</p>
+</div>
+<div class="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/20 transition-colors">
+<p class="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Efficiency Optimization</p>
+<p class="text-sm font-medium">Cache hit ratio increased by 12% in last cycle.</p>
+</div>
+<div class="p-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 hover:bg-white/20 transition-colors">
+<p class="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Maintenance</p>
+<p class="text-sm font-medium">Scheduled DB optimization in 4h 20m.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Global Allocation Map -->
+<div class="md:col-span-12 lg:col-span-7 glass-card rounded-full p-8 min-h-[450px] relative overflow-hidden">
+<div class="flex justify-between items-center mb-8 relative z-10">
+<div>
+<h3 class="text-xl font-bold tracking-tight">Global Allocation Map</h3>
+<p class="text-sm text-on-surface-variant">Infrastructure distribution by region</p>
+</div>
+<div class="flex items-center gap-4 text-xs font-bold text-on-surface-variant uppercase tracking-widest">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-primary"></span> High</span>
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-secondary-container"></span> Low</span>
+</div>
+</div>
+<div class="absolute inset-0 top-24 left-8 right-8 bottom-8 flex items-center justify-center opacity-40 grayscale group hover:grayscale-0 transition-all duration-700">
+<img alt="Global connectivity map" class="w-full h-full object-contain" data-alt="Monochrome world map with subtle glowing data points and connecting lines in electric blue across continents" data-location="Global" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZYiCUe9iYMqp7uRwM4OXMnaX46ehr_oara-b_vyL_2uK7_Gwcvmag3V9VS_o68nyflH3pr9twAUtbkB6IAiO9-4N6PUgSrKkxsCkcVJXZMHnWT94D2Xm3lwK7DLFqclKzQvEMHd53GSjtoBsAdT7JEWpw5zBrebBSN0-hcxEV9CwNwZdUETXfm2LHVRmoHFsXLH3__BuvaiTSG790Retfa8RLe02qmojZpa2hvbzNoOy0UjACPM1EzqAXdc8PwiBr1lfX9NIrMdM"/>
+</div>
+<!-- Floating Data Chips -->
+<div class="absolute top-1/3 left-1/4 p-3 bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-primary/10 flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary animate-ping"></div>
+<div>
+<p class="text-[10px] font-bold uppercase text-on-surface-variant">US-EAST</p>
+<p class="text-sm font-black">4.2M Tokens</p>
+</div>
+</div>
+<div class="absolute bottom-1/4 right-1/3 p-3 bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-primary/10 flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div>
+<p class="text-[10px] font-bold uppercase text-on-surface-variant">EU-CENTRAL</p>
+<p class="text-sm font-black">2.9M Tokens</p>
+</div>
+</div>
+</div>
+<!-- Billing History -->
+<div class="md:col-span-12 lg:col-span-5 glass-card rounded-full p-8 flex flex-col h-full">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="text-xl font-bold tracking-tight">Billing History</h3>
+<p class="text-sm text-on-surface-variant">Current period: Oct 2024</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-colors">history</span>
+</div>
+<div class="space-y-2 flex-grow overflow-y-auto pr-2 custom-scrollbar">
+<div class="group flex items-center justify-between p-4 rounded-2xl hover:bg-surface-container-high transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-xl">receipt_long</span>
+</div>
+<div>
+<p class="font-bold text-sm">Invoice #NTE-8921</p>
+<p class="text-xs text-on-surface-variant">Processing • Oct 14, 2024</p>
+</div>
+</div>
+<p class="font-black text-on-surface">$12,450.00</p>
+</div>
+<div class="group flex items-center justify-between p-4 rounded-2xl hover:bg-surface-container-high transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-green-700">
+<span class="material-symbols-outlined text-xl">check_circle</span>
+</div>
+<div>
+<p class="font-bold text-sm">Invoice #NTE-8810</p>
+<p class="text-xs text-on-surface-variant">Paid • Sep 30, 2024</p>
+</div>
+</div>
+<p class="font-black text-on-surface">$10,120.50</p>
+</div>
+<div class="group flex items-center justify-between p-4 rounded-2xl hover:bg-surface-container-high transition-all">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center text-green-700">
+<span class="material-symbols-outlined text-xl">check_circle</span>
+</div>
+<div>
+<p class="font-bold text-sm">Invoice #NTE-8742</p>
+<p class="text-xs text-on-surface-variant">Paid • Aug 31, 2024</p>
+</div>
+</div>
+<p class="font-black text-on-surface">$9,840.00</p>
+</div>
+</div>
+<div class="mt-8 pt-8 border-t border-outline-variant/10">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Accrued Balance</p>
+<p class="text-3xl font-black text-on-surface">$4,212.18</p>
+</div>
+<button class="text-primary text-sm font-bold flex items-center gap-1 group">
+                            Account Settings <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Strategy Advisory Section -->
+<section class="mt-12 bg-surface-container-low rounded-[2rem] p-12 relative overflow-hidden border border-outline-variant/5">
+<div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<div>
+<h2 class="text-4xl font-black tracking-tighter mb-6 leading-none">Token Efficiency <br/>Strategy Advisory</h2>
+<p class="text-on-surface-variant mb-8 leading-relaxed">Our predictive algorithms have identified a 15% potential savings in your token economy by redistributing batch processing to off-peak hours in the Northern Hemisphere.</p>
+<div class="flex flex-wrap gap-4">
+<div class="bg-white px-6 py-4 rounded-2xl shadow-sm">
+<p class="text-[10px] font-extrabold uppercase tracking-widest text-primary mb-1">Optimization Opportunity</p>
+<p class="text-lg font-bold">Latency Reduction</p>
+</div>
+<div class="bg-white px-6 py-4 rounded-2xl shadow-sm">
+<p class="text-[10px] font-extrabold uppercase tracking-widest text-primary mb-1">Cost Prediction</p>
+<p class="text-lg font-bold">-$1,200 / Month</p>
+</div>
+</div>
+</div>
+<div class="relative h-64 md:h-80 w-full overflow-hidden rounded-[2rem]">
+<img alt="Data analytics visualization" class="w-full h-full object-cover" data-alt="Futuristic data analysis interface with glowing nodes and lines, soft focus on deep purple and blue light gradients" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQMCB9os3hkCuUAPQFk65cP71Zdpn1_n5GN7cGidAADxWdmS_QfORp5TUFHOt4Iofh2jSiqr8H8A24wkLnPlfsPMSzdItMbMsvkxvIODKXX3cq3907Tk6k00jHIHtxE_ymTrHJwW6Z078uGs4Y11rMLKh3Yz6hnJljNrrT_DuUSUrBxpIEIq_X32GVCzCgVtiN9aLc1k4EBbtyIsLwWpbEs8PaDYEBbNA6mL0ygbO9kGkX6_qgGAyeVh6z2nLpfB0v2DfZvdioluQ"/>
+<div class="absolute inset-0 bg-gradient-to-tr from-surface-container-low via-transparent to-transparent"></div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 mt-20 bg-white dark:bg-slate-950">
+<div class="flex flex-col md:flex-row justify-between items-center px-12 max-w-7xl mx-auto opacity-70">
+<div class="mb-6 md:mb-0">
+<span class="font-['Manrope'] text-xs uppercase tracking-widest text-slate-400">© 2024 Narrative Translation Engine</span>
+</div>
+<div class="flex gap-8">
+<a class="font-['Manrope'] text-xs uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors" href="#">Privacy Policy</a>
+<a class="font-['Manrope'] text-xs uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors" href="#">Terms of Service</a>
+<a class="font-['Manrope'] text-xs uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

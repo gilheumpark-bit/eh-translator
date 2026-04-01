@@ -1,796 +1,798 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useAuth, SignInButton, UserButton } from '@clerk/nextjs';
-import { saveProjectToCloud, loadProjectFromCloud, listUserProjects, getProjectsForReference } from '@/lib/supabase';
+import { ChangeEvent, startTransition, useEffect, useRef, useState } from 'react';
+import { useAuth, UserButton, SignInButton } from '@clerk/nextjs';
 
 const LANGUAGES = [
-  { code: 'Korean', label: '한국어', flag: '🇰🇷' },
-  { code: 'English', label: 'English', flag: '🇺🇸' },
-  { code: 'Japanese', label: '日本語', flag: '🇯🇵' },
-  { code: 'Chinese', label: '中文', flag: '🇨🇳' },
+  { code: 'ja', label: '日本語 (JAPANESE)' },
+  { code: 'ko', label: '한국어 (KOREAN)' },
+  { code: 'en', label: 'ENGLISH' },
+  { code: 'zh', label: 'CHINESE' }
 ];
 
 const PROVIDERS = [
-  { id: 'gemini', label: 'Google Gemini', role: '1차 초안 (컨텍스트 파악)', models: ['gemini-2.0-flash', 'gemini-1.5-pro'] },
-  { id: 'deepseek', label: 'DeepSeek', role: '2차 교정 (수리적, 논리적 흐름)', models: ['deepseek-chat', 'deepseek-reasoner'] },
-  { id: 'claude', label: 'Anthropic Claude', role: '3차 퇴고 (문학적 감성/유창성)', models: ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229'] },
-  { id: 'openai', label: 'OpenAI GPT', role: '4차 검수 (지시어 엄수 및 검증)', models: ['gpt-4o', 'gpt-4o-mini'] },
-  { id: 'mistral', label: 'Mistral AI', role: '사전 분석 (스타일 분석)', models: ['mistral-large-latest'] },
+  { id: 'openai', label: 'GPT-4o (OAI)', role: 'Ensemble Base' },
+  { id: 'claude', label: 'CLAUDE 3.5 (ANT)', role: 'Creative Refinement' },
+  { id: 'gemini', label: 'GEMINI 1.5 (GOOG)', role: 'Context Analyst' },
+  { id: 'deepseek', label: 'DEEPSEEK (DS)', role: 'Fast Draft' }
 ];
 
-const TONES = [
-  { id: 'natural', label: '자연스럽게' },
-  { id: 'literary', label: '문학적' },
-  { id: 'casual', label: '구어체' },
-  { id: 'formal', label: '격식체' },
-  { id: 'poetic', label: '시적' },
+const BACKGROUND_MODES = [
+  { id: 'nebula', label: 'NEBULA (DEEP)', note: '오로라 딥스페이스 - 집중형 컨텍스트' },
+  { id: 'glacial', label: 'GLACIAL (WHITE)', note: '화이트 글래스 - 문서 작업 최적화' }
 ];
-
-const GENRES = [
-  { id: 'General', label: '일반 소설' },
-  { id: 'Fantasy', label: '판타지' },
-  { id: 'Romance', label: '로맨스 / BL' },
-  { id: 'MartialArts', label: '무협 / 선협' },
-  { id: 'Sci-Fi', label: 'SF / 사이버펑크' },
-  { id: 'Horror', label: '공포 / 스릴러' },
-];
-
-interface Chapter {
-  name: string;
-  content: string;
-  result: string;
-  isDone: boolean;
-  stageProgress?: number; // 1~4: 진행 중인 단계, 5: 완료
-}
 
 export default function Home() {
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const { isLoaded: isAuthLoaded, userId } = useAuth();
+  const isHydrated = useRef(false);
+  
+  // App States
+  const [projectId, setProjectId] = useState(() => Date.now().toString());
+  const [projectName, setProjectName] = useState('');
+  const [projectList, setProjectList] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
   const [activeChapterIndex, setActiveChapterIndex] = useState<number | null>(null);
+  const [referenceIds, setReferenceIds] = useState<string[]>([]);
+  
   const [source, setSource] = useState('');
   const [result, setResult] = useState('');
-  const [from, setFrom] = useState('Korean');
-  const [to, setTo] = useState('English');
-  const [provider, setProvider] = useState('gemini');
+  const [from, setFrom] = useState('ja');
+  const [to, setTo] = useState('ko');
+  const [provider, setProvider] = useState('openai');
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
-  const [model, setModel] = useState('');
-  const [glossary, setGlossary] = useState('');
-  const [tone, setTone] = useState('natural');
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
-  const [error, setError] = useState('');
-  const [showGlossary, setShowGlossary] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  
+  // UI States
+  const [isZenMode, setIsZenMode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [genre, setGenre] = useState('General');
-  const [context, setContext] = useState('');
+  const [backgroundMode, setBackgroundMode] = useState('glacial');
+  const [isCatMode, setIsCatMode] = useState(false);
+  const [showUrlImport, setShowUrlImport] = useState(false);
+  const [showCharacters, setShowCharacters] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [translationMode, setTranslationMode] = useState<'novel' | 'general'>('novel');
+  
+  // Specialized Contexts
   const [worldContext, setWorldContext] = useState('');
   const [characterProfiles, setCharacterProfiles] = useState('');
-  const [showCharacters, setShowCharacters] = useState(false);
   const [storySummary, setStorySummary] = useState('');
-  const [showSummary, setShowSummary] = useState(false);
-  const [isZenMode, setIsZenMode] = useState(false);
-  const { isLoaded: isAuthLoaded, userId } = useAuth();
-  const [backResult, setBackResult] = useState('');
-  const [history, setHistory] = useState<{ from: string; to: string; source: string; result: string; time: number }[]>([]);
-  const [fileList, setFileList] = useState<string[]>([]);
   const [styleAnalysis, setStyleAnalysis] = useState<any>(null);
-  const [isCatMode, setIsCatMode] = useState(false);
+  const [backResult, setBackResult] = useState('');
   const [lockedFeature, setLockedFeature] = useState<string | null>(null);
-  const [translationMode, setTranslationMode] = useState<'novel' | 'general'>('novel');
-  const [urlInput, setUrlInput] = useState('');
-  const [showUrlImport, setShowUrlImport] = useState(false);
+  const prevActiveChapterIndex = useRef<number | null>(activeChapterIndex);
 
-  // V3.1 Multi-Project & Cross Reference
-  const [projectId, setProjectId] = useState<string>('default_session');
-  const [projectName, setProjectName] = useState<string>('');
-  const [projectList, setProjectList] = useState<any[]>([]);
-  const [referenceIds, setReferenceIds] = useState<string[]>([]);
-  const [crossReferenceContext, setCrossReferenceContext] = useState<string>('');
-
-  const isLoaded = useRef(false);
-
-  // Sync active chapter with source/result
   useEffect(() => {
-    if (activeChapterIndex !== null && chapters[activeChapterIndex]) {
-      setSource(chapters[activeChapterIndex].content);
-      setResult(chapters[activeChapterIndex].result);
-    }
-  }, [activeChapterIndex]);
-
-  // Update chapter content when source/result changes (Debounced to prevent UI lag)
-  useEffect(() => {
-    if (activeChapterIndex !== null && chapters[activeChapterIndex]) {
-       const timer = setTimeout(() => {
-         setChapters(prev => {
-           if (!prev[activeChapterIndex]) return prev;
-           if (prev[activeChapterIndex].content === source && prev[activeChapterIndex].result === result) return prev;
-           const next = [...prev];
-           next[activeChapterIndex] = { ...next[activeChapterIndex], content: source, result: result };
-           return next;
-         });
-       }, 300); // 300ms defer
-       return () => clearTimeout(timer);
-    }
-  }, [source, result, activeChapterIndex]);
-
-  // --- Persistence ---
-  useEffect(() => {
-    if (typeof window === 'undefined' || !isAuthLoaded || isLoaded.current) return;
-    
-    const loadState = async () => {
-      let s = null;
-      if (userId) {
-         try {
-           s = await loadProjectFromCloud(userId, 'default_session');
-         } catch(e) { console.error('Cloud load failed', e); }
-      }
-      
-      if (!s) {
-         const savedState = localStorage.getItem('eh-translator-v2-state');
-         if (savedState) {
-           try { s = JSON.parse(savedState); } catch(e) { console.error(e); }
-         }
-      }
-
-      if (s) {
-        if (s.chapters !== undefined) setChapters(s.chapters);
-        if (s.activeChapterIndex !== undefined) setActiveChapterIndex(s.activeChapterIndex);
-        if (s.from !== undefined) setFrom(s.from);
-        if (s.to !== undefined) setTo(s.to);
-        if (s.provider !== undefined) setProvider(s.provider);
-        if (s.apiKeys !== undefined) setApiKeys(s.apiKeys);
-        else if (s.apiKey) setApiKeys({ [s.provider || 'gemini']: s.apiKey });
-        if (s.model !== undefined) setModel(s.model);
-        if (s.glossary !== undefined) setGlossary(s.glossary);
-        if (s.tone !== undefined) setTone(s.tone);
-        if (s.history !== undefined) setHistory(s.history);
-        if (s.worldContext !== undefined) setWorldContext(s.worldContext);
-        if (s.genre !== undefined) setGenre(s.genre);
-        
-        // v3.0 Additional states
-        if (s.characterProfiles !== undefined) setCharacterProfiles(s.characterProfiles);
-        if (s.storySummary !== undefined) setStorySummary(s.storySummary);
-        if (s.translationMode !== undefined) setTranslationMode(s.translationMode);
-      }
-      isLoaded.current = true;
-    }
-    
-    loadState();
-  }, [isAuthLoaded, userId]);
-
-  // Auto-save (Debounced to prevent rendering freezes)
-  useEffect(() => {
-    if (!isLoaded.current) return;
-    const state = { chapters, activeChapterIndex, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, history, characterProfiles, storySummary, projectName, translationMode };
-    
-    const saveTimer = setTimeout(() => {
-      localStorage.setItem('eh-translator-v2-state', JSON.stringify(state));
-      // [A안] Supabase 클라우드 실시간 자동 동기화 (userId가 있을 때만)
-      if (userId) {
-        saveProjectToCloud(userId, projectId, state).catch(console.error);
-      }
-    }, 3000); 
-    return () => clearTimeout(saveTimer);
-  }, [chapters, activeChapterIndex, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, history, characterProfiles, storySummary, projectName, projectId]);
-
-  // V3.1: Fetch List of projects when user logs in
-  useEffect(() => {
-    if (userId) {
-       listUserProjects(userId).then(setProjectList).catch(console.error);
-    }
-  }, [userId]);
-
-  // V3.1: Construct Cross Reference Context dynamically when IDs change
-  useEffect(() => {
-    if (!userId || referenceIds.length === 0) {
-       setCrossReferenceContext('');
-       return;
-    }
-    const fetchRefs = async () => {
-       try {
-         const refs = await getProjectsForReference(userId, referenceIds);
-         const combined = refs.map((r, i) => `[참조 데이터 ${i+1}: ${r.project_name || '이전 프로젝트'}]\n요약:\n${r.storySummary || '(요약 없음)'}\n\n참조인물:\n${r.characterProfiles || '(없음)'}`).join('\n\n---\n\n');
-         setCrossReferenceContext(combined);
-       } catch (e) {
-         console.error('Failed to load cross references', e);
-       }
-    };
-    fetchRefs();
-  }, [userId, referenceIds]);
-
-  const exportData = () => {
-    const state = { source, result, from, to, provider, apiKeys, model, glossary, tone, history, fileList };
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eh-translator-data-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importDocument = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setLoading(true);
-    
-    try {
-      let newChapters: Chapter[] = [];
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileName = file.name;
-        
-        // 로컬 텍스트 바로 읽기
-        if (fileName.toLowerCase().endsWith('.txt') || fileName.toLowerCase().endsWith('.md')) {
-           const content = await file.text();
-           newChapters.push({ name: fileName, content, result: '', isDone: false, stageProgress: 1 });
-           continue;
-        }
-
-        // DOCX, EPUB, PDF는 서버 구동 파서(B안) 사용
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const res = await fetch('/api/upload', {
-           method: 'POST',
-           body: formData,
-        });
-
-        if (!res.ok) {
-           const err = await res.json().catch(()=>({error: res.statusText}));
-           throw new Error(err.error || 'Upload failed');
-        }
-
-        const data = await res.json();
-        if (data.chapters && data.chapters.length > 0) {
-           data.chapters.forEach((ch: any) => {
-              newChapters.push({ name: `${fileName} - ${ch.title}`, content: ch.content, result: '', isDone: false, stageProgress: 1 });
-           });
-        }
-      }
-      
-      let updatedChapters = [...chapters, ...newChapters];
-      if (updatedChapters.length > 30) {
-        alert(`프로젝트(볼륨) 1개당 최대 30화까지만 허용됩니다.\n총 ${updatedChapters.length}화 중 30화만 자릅니다.\n초과된 분량은 번역 완료 후 새 프로젝트를 만들어 "이전 프로젝트 참조" 필드를 활용해 이어가세요.`);
-        updatedChapters = updatedChapters.slice(0, 30);
-        newChapters = updatedChapters.slice(chapters.length);
-      }
-      setChapters(updatedChapters);
-      if (newChapters.length > 0) {
-        setActiveChapterIndex(chapters.length); 
-      }
-      alert(`${files.length}개 원고에서 ${newChapters.length}개의 챕터를 성공적으로 추출했습니다.`);
-    } catch (err) {
-      console.error(err);
-      alert('파일 형식 파싱에 실패했습니다 (EPUB, PDF, DOCX만 지원). 에러: ' + (err instanceof Error ? err.message : 'Unknown'));
-    } finally {
-      setLoading(false);
-      e.target.value = '';
-    }
-  };
-
-  const analyzeStyle = useCallback(async () => {
-    if (!source.trim()) {
-      setError('분석할 텍스트를 입력하세요');
+    const savedState = localStorage.getItem('eh_translator_ui_state');
+    if (!savedState) {
+      isHydrated.current = true;
       return;
     }
-    setLoading(true);
-    setStatusMsg('스타일 분석 중...');
-    setError('');
 
     try {
-      const p0 = apiKeys['mistral'] ? 'mistral' : provider;
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: source.slice(0, 5000), from, to, provider: p0, apiKey: apiKeys[p0], model: '', stage: 0 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const parsed = JSON.parse(savedState);
+      if (parsed.projectId !== undefined) setProjectId(parsed.projectId);
+      if (parsed.projectName !== undefined) setProjectName(parsed.projectName);
+      if (parsed.projectList !== undefined) setProjectList(parsed.projectList);
+      if (parsed.chapters !== undefined) setChapters(parsed.chapters);
+      if (parsed.activeChapterIndex !== undefined) setActiveChapterIndex(parsed.activeChapterIndex);
+      if (parsed.source !== undefined) setSource(parsed.source);
+      if (parsed.result !== undefined) setResult(parsed.result);
+      if (parsed.from !== undefined) setFrom(parsed.from);
+      if (parsed.to !== undefined) setTo(parsed.to);
+      if (parsed.provider !== undefined) setProvider(parsed.provider);
+      if (parsed.apiKeys !== undefined) setApiKeys(parsed.apiKeys);
+      if (parsed.history !== undefined) setHistory(parsed.history);
+      if (parsed.isZenMode !== undefined) setIsZenMode(parsed.isZenMode);
+      if (parsed.backgroundMode !== undefined) setBackgroundMode(parsed.backgroundMode);
+      if (parsed.isCatMode !== undefined) setIsCatMode(parsed.isCatMode);
+      if (parsed.translationMode !== undefined) setTranslationMode(parsed.translationMode);
+      if (parsed.worldContext !== undefined) setWorldContext(parsed.worldContext);
+      if (parsed.characterProfiles !== undefined) setCharacterProfiles(parsed.characterProfiles);
+      if (parsed.storySummary !== undefined) setStorySummary(parsed.storySummary);
+      if (parsed.referenceIds !== undefined) setReferenceIds(parsed.referenceIds);
+    } catch (error) {
+      console.error('Failed to restore state', error);
+    } finally {
+      isHydrated.current = true;
+    }
+  }, []);
 
-      let parsed;
-      try {
-        parsed = JSON.parse(data.result);
-      } catch (e) {
-        const jsonMatch = data.result.match(/\{[\s\S]*\}/);
-        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-        else throw new Error('Analysis format error');
+  useEffect(() => {
+    if (!isHydrated.current) return;
+
+    const timeout = window.setTimeout(() => {
+      localStorage.setItem('eh_translator_ui_state', JSON.stringify({
+        projectId,
+        projectName,
+        projectList,
+        chapters,
+        activeChapterIndex,
+        source,
+        result,
+        from,
+        to,
+        provider,
+        apiKeys,
+        history,
+        isZenMode,
+        backgroundMode,
+        isCatMode,
+        translationMode,
+        worldContext,
+        characterProfiles,
+        storySummary,
+        referenceIds,
+      }));
+      setLastSavedAt(Date.now());
+    }, 320);
+
+    return () => window.clearTimeout(timeout);
+  }, [projectId, projectName, projectList, chapters, activeChapterIndex, source, result, from, to, provider, apiKeys, history, isZenMode, backgroundMode, isCatMode, translationMode, worldContext, characterProfiles, storySummary, referenceIds]);
+
+  // Sync current editor to chapters array to prevent data loss
+  useEffect(() => {
+    if (!isHydrated.current || activeChapterIndex === null) return;
+    
+    // 챕터가 전환되었을 경우, source가 갱신될 때까지 동기화를 1회 지연시킵니다. (Race Condition 방지)
+    if (activeChapterIndex !== prevActiveChapterIndex.current) {
+      prevActiveChapterIndex.current = activeChapterIndex;
+      return;
+    }
+
+    const activeChapter = chapters[activeChapterIndex];
+    if (!activeChapter) return;
+    if (activeChapter.content === source && activeChapter.result === result) return;
+
+    const timeout = window.setTimeout(() => {
+      patchActiveChapter({ content: source, result });
+    }, 650);
+
+    return () => window.clearTimeout(timeout);
+  }, [source, result, activeChapterIndex, chapters]);
+
+  // Track project changes
+  useEffect(() => {
+    if (!isHydrated.current || !projectName) return;
+    setProjectList(prev => {
+      const existing = prev.find(p => p.id === projectId);
+      if (existing) {
+        if (existing.project_name === projectName) return prev;
+        return prev.map(p => p.id === projectId ? { ...p, project_name: projectName } : p);
+      }
+      return [...prev, { id: projectId, project_name: projectName }];
+    });
+  }, [projectName, projectId]);
+
+  const requestTranslation = async (payload: Record<string, unknown>) => {
+    const res = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const contentType = res.headers.get('content-type') || '';
+
+    if (!res.ok) {
+      if (contentType.includes('application/json')) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || '요청 처리 중 오류가 발생했습니다.');
       }
 
-      setStyleAnalysis(parsed);
-      const matchedGenre = GENRES.find(g => g.id.toLowerCase() === parsed.genre.toLowerCase());
-      if (matchedGenre) setGenre(matchedGenre.id);
-      
-      const matchedTone = TONES.find(t => t.id.toLowerCase() === parsed.tone.toLowerCase());
-      if (matchedTone) setTone(matchedTone.id);
+      throw new Error((await res.text()) || '요청 처리 중 오류가 발생했습니다.');
+    }
 
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Style analysis failed');
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      return data.result || '';
+    }
+
+    return res.text();
+  };
+
+  const patchActiveChapter = (patch: Record<string, unknown>) => {
+    if (activeChapterIndex === null) return;
+    setChapters((previous) => {
+      if (!previous[activeChapterIndex]) return previous;
+
+      const currentChapter = previous[activeChapterIndex];
+      const shouldUpdate = Object.entries(patch).some(([key, value]) => currentChapter[key] !== value);
+      if (!shouldUpdate) return previous;
+
+      const next = [...previous];
+      next[activeChapterIndex] = { ...currentChapter, ...patch };
+      return next;
+    });
+  };
+
+  const openChapter = (index: number | null, chapterList = chapters) => {
+    if (index === null) {
+      startTransition(() => {
+        setActiveChapterIndex(null);
+        setSource('');
+        setResult('');
+      });
+      return;
+    }
+
+    const chapter = chapterList[index];
+    if (!chapter) return;
+
+    startTransition(() => {
+      setActiveChapterIndex(index);
+      setSource(chapter.content || '');
+      setResult(chapter.result || '');
+    });
+  };
+
+  // Core Actions
+  const translate = async () => {
+    if (!source.trim()) return;
+    setLoading(true);
+    setStatusMsg('FAST DRAFT');
+    try {
+      const translated = await requestTranslation({
+        text: source,
+        from,
+        to,
+        provider,
+        apiKey: apiKeys[provider] || '',
+        mode: translationMode,
+        tone: 'natural',
+        genre: translationMode === 'novel' ? 'Novel' : 'General',
+        context: worldContext,
+        characterProfiles,
+        storySummary,
+        referenceIds,
+      });
+      setResult(translated);
+      patchActiveChapter({ result: translated, isDone: true, stageProgress: 5 });
+      setHistory((prev) => [{ source, result: translated, time: Date.now(), from, to }, ...prev.slice(0, 19)]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '번역 오류가 발생했습니다.');
     } finally {
       setLoading(false);
       setStatusMsg('');
     }
-  }, [source, from, to, provider, apiKeys, model]);
+  };
 
-  const translate = useCallback(async () => {
-    if (!source.trim()) {
-      setError('번역할 텍스트를 입력하세요');
-      return;
-    }
+  const deepTranslate = async () => {
+    if (!source.trim()) return;
     setLoading(true);
-    setError('');
-    setBackResult('');
-
+    const stageSequence = translationMode === 'novel'
+      ? [
+          { stage: 1, label: 'FIRST DRAFT', providerId: apiKeys.gemini ? 'gemini' : provider },
+          { stage: 2, label: 'LORE ALIGN', providerId: apiKeys.deepseek ? 'deepseek' : provider },
+          { stage: 3, label: 'PROSE SHAPE', providerId: apiKeys.claude ? 'claude' : provider },
+          { stage: 4, label: 'NATIVE RESONANCE', providerId: apiKeys.openai ? 'openai' : provider },
+          { stage: 5, label: 'FINAL POLISH', providerId: apiKeys.claude ? 'claude' : provider },
+        ]
+      : [
+          { stage: 1, label: 'STRUCTURAL ANALYSIS', providerId: provider },
+          { stage: 5, label: 'FINAL ACCURACY', providerId: provider },
+        ];
     try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text: source, from, to, provider, apiKey: apiKeys[provider] || '', model, glossary, tone, genre, 
-          context: `${context}\n\n[World/Lore]: ${worldContext}` 
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Translation failed');
-      setResult(data.result);
-      setHistory(prev => [{ from, to, source: source.slice(0, 50), result: data.result.slice(0, 50), time: Date.now() }, ...prev.slice(0, 19)]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, [source, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext]);
-
-  const refineResult = useCallback(async () => {
-    if (!result.trim()) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text: result, 
-          from: to, 
-          to: to, 
-          provider: apiKeys['claude'] ? 'claude' : provider, 
-          apiKey: apiKeys['claude'] ? apiKeys['claude'] : (apiKeys[provider] || ''), 
-          model: '', 
-          glossary, 
-          tone, 
-          genre, 
-          context: `Refinement request. Context: ${context}\nLore: ${worldContext}` 
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setResult(data.result);
-    } catch (err) {
-        setError(err instanceof Error ? err.message : 'Refinement failed');
-    } finally {
-        setLoading(false);
-    }
-  }, [result, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext]);
-
-  const backTranslate = useCallback(async () => {
-    if (!result.trim()) return;
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text: result, 
-          from: to, 
-          to: from, 
-          provider, 
-          apiKey: apiKeys[provider] || '', 
-          model, 
+      let currentResult = source;
+      for (const item of stageSequence) {
+        setStatusMsg(item.label);
+        currentResult = await requestTranslation({
+          text: item.stage === 1 ? source : currentResult,
+          sourceText: source,
+          stage: item.stage,
+          from,
+          to,
+          provider: item.providerId,
+          apiKey: apiKeys[item.providerId] || '',
+          mode: translationMode,
           tone: 'natural',
-          genre: 'General',
-          context: 'CHECK: Translate back strictly for verification.'
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setBackResult(data.result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Back-translation failed');
-    } finally {
-      setLoading(false);
-    }
-  }, [result, from, to, provider, apiKeys, model]);
-  const fetchStream = async (payload: any, onChunk: (text: string) => void, maxRetries = 2): Promise<string> => {
-    let attempts = 0;
-    while (attempts <= maxRetries) {
-      try {
-        const res = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          genre: translationMode === 'novel' ? 'Novel' : 'General',
+          context: worldContext,
+          characterProfiles,
+          storySummary,
+          referenceIds,
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: res.statusText }));
-          throw new Error(err.error || 'API Error');
-        }
-        const reader = res.body?.getReader();
-        if (!reader) throw new Error('No readable stream');
-        const decoder = new TextDecoder();
-        let fullText = '';
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) {
-            // [3번 문제] 중간에 문장이 끊겼는지 종결어미 휴리스틱 검사
-            const trimmed = fullText.trim();
-            if (trimmed.length > 0 && !trimmed.match(/[\.\?\!\”\"\'\>다요]$/)) {
-               if (attempts < maxRetries) throw new Error('Stream interrupted prematurely');
-            }
-            break;
-          }
-          if (value) {
-            fullText += decoder.decode(value, { stream: true });
-            onChunk(fullText);
-          }
-        }
-        return fullText;
-      } catch (err: any) {
-        attempts++;
-        if (attempts > maxRetries) throw err;
-        console.warn(`Stream failed. Retrying... (${attempts}/${maxRetries})`);
-        await new Promise(r => setTimeout(r, 2000));
-        onChunk(`(네트워크 오류로 재시도 중... ${attempts}/${maxRetries})\n\n`);
+        setResult(currentResult);
+        patchActiveChapter({
+          result: currentResult,
+          stageProgress: item.stage,
+          isDone: item.stage === 5,
+        });
       }
-    }
-    return '';
-  };
-
-  const runDeepPipeline = async (text: string, currentRes: string, startStage: number, onProgress: (msg: string) => void, onSave: (r: string, s: number) => void, episodeContext: string = '', pipelineStorySummary: string = storySummary, mode: 'novel' | 'general' = 'novel') => {
-    if (!text.trim()) return currentRes;
-    const payload = { from, to, model, glossary, tone, genre, context: `${context}\nLore: ${worldContext}`, characterProfiles, episodeContext, storySummary: pipelineStorySummary, mode };
-    
-    let tempResult = currentRes || text;
-
-    if (startStage <= 1) {
-      const p1 = apiKeys['gemini'] ? 'gemini' : provider;
-      onProgress(`에이전트 1 (수석 번역가) 가동 중... (via ${p1})`);
-      tempResult = await fetchStream({ ...payload, provider: p1, apiKey: apiKeys[p1], text, sourceText: text, stage: 1 }, (chunk) => onSave(chunk, 1));
-      onSave(tempResult, 2);
-    }
-
-    if (mode === 'novel') {
-      if (startStage <= 2) {
-        const p2 = apiKeys['deepseek'] ? 'deepseek' : provider;
-        onProgress(`에이전트 2 (고증/로어 마스터) 점검 중... (via ${p2})`);
-        tempResult = await fetchStream({ ...payload, provider: p2, apiKey: apiKeys[p2], text: tempResult, sourceText: text, stage: 2 }, (chunk) => onSave(chunk, 2));
-        onSave(tempResult, 3);
-      }
-
-      if (startStage <= 3) {
-        const p3 = apiKeys['claude'] ? 'claude' : provider;
-        onProgress(`에이전트 3 (문체/호흡 감독관) 수정 중... (via ${p3})`);
-        tempResult = await fetchStream({ ...payload, provider: p3, apiKey: apiKeys[p3], text: tempResult, sourceText: text, stage: 3 }, (chunk) => onSave(chunk, 3));
-        onSave(tempResult, 4);
-      }
-
-      if (startStage <= 4) {
-        const p4 = apiKeys['openai'] ? 'openai' : provider;
-        onProgress(`에이전트 4 (은유/복선 분석가) 심층 투입... (via ${p4})`);
-        tempResult = await fetchStream({ ...payload, provider: p4, apiKey: apiKeys[p4], text: tempResult, sourceText: text, stage: 4 }, (chunk) => onSave(chunk, 4));
-        onSave(tempResult, 5);
-      }
-    } else {
-      // General mode: skip stages 2-4, jump straight to final polish
-      onProgress('범용 모드: 정확도 우선 검수 중...');
-      onSave(tempResult, 5);
-    }
-
-    if (startStage <= 5) {
-      const p5 = apiKeys['mistral'] ? 'mistral' : (apiKeys['deepseek'] ? 'deepseek' : provider);
-      onProgress(`${mode === 'novel' ? '에이전트 5 (총괄 편집장) 윤문 및 픽업' : '최종 교정 (문법/오타 제거)'}... (via ${p5})`);
-      tempResult = await fetchStream({ ...payload, provider: p5, apiKey: apiKeys[p5], text: tempResult, sourceText: text, stage: 5 }, (chunk) => onSave(chunk, 5));
-      onSave(tempResult, 6);
-    }
-    
-    return tempResult;
-  };
-
-  const deepTranslate = useCallback(async () => {
-    if (!source.trim()) {
-      setError('번역할 텍스트를 입력하세요');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    setStatusMsg('파이프라인 시작...');
-    
-    const chapter = activeChapterIndex !== null ? chapters[activeChapterIndex] : null;
-    const startStage = chapter?.stageProgress || 1;
-    let currentRes = chapter?.result || '';
-
-    try {
-      const epCtx = activeChapterIndex && activeChapterIndex > 0 ? (chapters[activeChapterIndex - 1].result || chapters[activeChapterIndex - 1].content) : '';
-
-      const finalResult = await runDeepPipeline(
-        source, 
-        currentRes, 
-        startStage, 
-        (msg) => setStatusMsg(msg),
-        (part, stage) => {
-          setResult(part); 
-          if (activeChapterIndex !== null) {
-            setChapters(prev => {
-              const next = [...prev];
-              next[activeChapterIndex] = { ...next[activeChapterIndex], result: part, stageProgress: stage };
-              return next;
-            });
-          }
-        },
-        epCtx,
-        crossReferenceContext ? `${crossReferenceContext}\n\n[현재 진행중 시리즈 요약]\n${storySummary}` : storySummary,
-        translationMode
-      );
-      setResult(finalResult);
-      if (activeChapterIndex !== null) {
-          setChapters(prev => {
-            const next = [...prev];
-            next[activeChapterIndex] = { ...next[activeChapterIndex], isDone: true, stageProgress: 6 };
-            return next;
-          });
-      }
-      setHistory(prev => [{ from, to, source: source.slice(0, 50), result: finalResult.slice(0, 50), time: Date.now() }, ...prev.slice(0, 19)]);
-    } catch(err) {
-      setError(`오류: ${err instanceof Error ? err.message : 'Unknown'}\n(재실행 시 실패 지점부터 자동 재개됩니다)`);
+      setHistory((prev) => [{ source, result: currentResult, time: Date.now(), from, to }, ...prev.slice(0, 19)]);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Deep Pipeline 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
       setStatusMsg('');
     }
-  }, [source, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, activeChapterIndex, chapters]);
-
-  // [2번 문제] 병렬 비선형 큐 번역엔진 적용
-  const batchTranslateAll = async () => {
-    if (chapters.length === 0) return;
-    if (!confirm(`${chapters.length}개의 모든 챕터를 [고속 병렬 큐]를 사용해 번역하시겠습니까?\n이전 번역이 덜 된 챕터는 인공지능이 원문(Source)을 기반으로 문맥을 추론하며 최고 속도로 동시 처리합니다.`)) return;
-    
-    setLoading(true);
-    setStatusMsg('병렬 파이프라인 엔진 가동 초읽기...');
-    try {
-      const CONCURRENCY = 3; // 동시 번역 쓰레드 개수
-      let activePromises: Promise<void>[] = [];
-      let currentStorySummary = crossReferenceContext ? `${crossReferenceContext}\n\n[현재 진행중 시리즈 요약]\n${storySummary}` : storySummary;
-
-      for (let i = 0; i < chapters.length; i++) {
-        const target = chapters[i];
-        if (target.isDone || target.stageProgress === 6) continue;
-        
-        if (activePromises.length >= CONCURRENCY) {
-           await Promise.race(activePromises);
-        }
-        
-        const p = (async () => {
-           try {
-             const startStage = target.stageProgress || 1;
-             const currentRes = target.result || '';
-             
-             // 병렬 큐: 이전 챕터가 진행 중이라면 원문(content)을 컨텍스트로 전달
-             const epCtx = i > 0 ? (chapters[i - 1].result || chapters[i - 1].content) : '';
-             
-             const result = await runDeepPipeline(
-                target.content, 
-                currentRes,
-                startStage,
-                (msg) => setStatusMsg(`${i + 1}/${chapters.length} - ${msg}`),
-                (part, stage) => {
-                   setChapters(curr => {
-                      const updated = [...curr];
-                      updated[i] = { ...updated[i], result: part, stageProgress: stage };
-                      return updated;
-                   });
-                },
-                epCtx,
-                currentStorySummary,
-                translationMode
-             );
-             setChapters(curr => {
-                const updated = [...curr];
-                updated[i] = { ...updated[i], result, isDone: true, stageProgress: 6 };
-                return updated;
-             });
-           } catch(e) {
-              console.error(`Chapter ${i+1} failed`, e);
-           }
-        })();
-        
-        activePromises.push(p);
-        p.finally(() => {
-           activePromises = activePromises.filter(curr => curr !== p);
-        });
-      }
-      
-      await Promise.all(activePromises);
-      alert('모든 챕터 번역이 병렬 처리로 초고속 완료되었습니다.');
-    } catch (err) {
-      alert(`병렬 번역 엔진 중 오류: ${err instanceof Error ? err.message : 'Unknown'}`);    } finally {
-       setLoading(false);
-       setStatusMsg('');
-    }
-  };
-
-  const downloadAllResults = () => {
-    if (chapters.length === 0) return;
-    const fullText = chapters.map(ch => `[${ch.name}]\n\n${ch.result || '(미번역)'}`).join('\n\n' + '='.repeat(30) + '\n\n');
-    const blob = new Blob([fullText], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eh-translator-full-result-${new Date().toISOString().slice(0, 10)}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  const importData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const s = JSON.parse(ev.target?.result as string);
-        if (s.source !== undefined) setSource(s.source);
-        if (s.result !== undefined) setResult(s.result);
-        if (s.from !== undefined) setFrom(s.from);
-        if (s.to !== undefined) setTo(s.to);
-        if (s.provider !== undefined) setProvider(s.provider);
-        if (s.apiKeys !== undefined) setApiKeys(s.apiKeys);
-        else if (s.apiKey !== undefined) setApiKeys({ [s.provider || 'gemini']: s.apiKey });
-        if (s.model !== undefined) setModel(s.model);
-        if (s.glossary !== undefined) setGlossary(s.glossary);
-        if (s.tone !== undefined) setTone(s.tone);
-        if (s.history !== undefined) setHistory(s.history);
-        alert('성공적으로 불러왔습니다!');
-      } catch (err) {
-        alert('잘못된 형식의 파일입니다.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
   };
 
   const importUrl = async () => {
     if (!urlInput.trim()) return;
     setLoading(true);
-    setStatusMsg('외부 URL 텍스트 가져오는 중...');
+    setStatusMsg('FETCHING URL');
     try {
       const res = await fetch(`/api/fetch-url?url=${encodeURIComponent(urlInput)}`);
-      if (!res.ok) throw new Error('URL 가져오기 실패');
       const data = await res.json();
-      setSource(data.text || '');
-      setShowUrlImport(false);
-      setUrlInput('');
-    } catch (err) {
-      alert(`URL 읽기 오류: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+      if (!res.ok) {
+        throw new Error(data.error || 'URL 읽기 오류');
+      }
+      if (data.text) {
+        setSource(data.text);
+        setShowUrlImport(false);
+        setUrlInput('');
+      } else {
+        alert('내용을 가져오지 못했습니다.');
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'URL 읽기 오류');
     } finally {
       setLoading(false);
       setStatusMsg('');
     }
   };
 
-  const swap = () => { setFrom(to); setTo(from); setSource(result); setResult(''); };
-  const currentProvider = PROVIDERS.find(p => p.id === provider);
+  const analyzeStyle = () => {
+    if (!source.trim()) return;
+
+    const quoteCount = (source.match(/[“"'「『]/g) || []).length;
+    const longSentenceCount = source
+      .split(/[.!?。！？]/)
+      .filter((line) => line.trim().length > 90).length;
+
+    setStyleAnalysis({
+      genre: /마법|검|왕국|황제|용/i.test(source) ? '판타지' : /보고서|가이드|정책/i.test(source) ? '정보형' : '서사형',
+      tone: quoteCount >= 6 ? '대사 중심' : longSentenceCount >= 3 ? '문장 밀도 높음' : '균형형',
+      metric: {
+        fluency: `${Math.min(96, 72 + longSentenceCount * 4)}%`,
+        immersion: `${Math.min(95, 68 + quoteCount * 3)}%`,
+      },
+    });
+  };
+
+  const exportData = () => {
+    if (!confirm('현재 프로젝트의 모든 설정과 챕터 데이터를 JSON 파일로 추출하시겠습니까?')) return;
+    const blob = new Blob([JSON.stringify({
+      projectName,
+      chapters,
+      activeChapterIndex,
+      source,
+      result,
+      from,
+      to,
+      provider,
+      apiKeys,
+      history,
+      worldContext,
+      characterProfiles,
+      storySummary,
+      backgroundMode,
+      isZenMode,
+      isCatMode,
+      translationMode,
+    }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `eh-translator-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importData = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm('새 프로젝트 파일을 불러오시겠습니까?\n현재 작업 중인 모든 데이터가 덮어씌워집니다. 이 작업은 되돌릴 수 없습니다.')) {
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        startTransition(() => {
+          if (parsed.projectName !== undefined) setProjectName(parsed.projectName);
+          if (parsed.chapters !== undefined) setChapters(parsed.chapters);
+          if (parsed.activeChapterIndex !== undefined) setActiveChapterIndex(parsed.activeChapterIndex);
+          if (parsed.source !== undefined) setSource(parsed.source);
+          if (parsed.result !== undefined) setResult(parsed.result);
+          if (parsed.from !== undefined) setFrom(parsed.from);
+          if (parsed.to !== undefined) setTo(parsed.to);
+          if (parsed.provider !== undefined) setProvider(parsed.provider);
+          if (parsed.apiKeys !== undefined) setApiKeys(parsed.apiKeys);
+          if (parsed.history !== undefined) setHistory(parsed.history);
+          if (parsed.worldContext !== undefined) setWorldContext(parsed.worldContext);
+          if (parsed.characterProfiles !== undefined) setCharacterProfiles(parsed.characterProfiles);
+          if (parsed.storySummary !== undefined) setStorySummary(parsed.storySummary);
+          if (parsed.backgroundMode !== undefined) setBackgroundMode(parsed.backgroundMode);
+          if (parsed.isZenMode !== undefined) setIsZenMode(parsed.isZenMode);
+          if (parsed.isCatMode !== undefined) setIsCatMode(parsed.isCatMode);
+          if (parsed.translationMode !== undefined) setTranslationMode(parsed.translationMode);
+        });
+      } catch {
+        alert('JSON 파일 형식이 올바르지 않습니다.');
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+  const importDocument = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+
+    if (!confirm(`${files.length}개의 문서를 현재 프로젝트 챕터 목록에 추가하시겠습니까?`)) {
+      event.target.value = '';
+      return;
+    }
+
+    setLoading(true);
+    setStatusMsg('IMPORTING FILES');
+    try {
+      const newChapters: any[] = [];
+
+      for (const file of Array.from(files)) {
+        const lowerName = file.name.toLowerCase();
+
+        if (lowerName.endsWith('.txt') || lowerName.endsWith('.md')) {
+          newChapters.push({ name: file.name, content: await file.text(), result: '', isDone: false, stageProgress: 0 });
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || `${file.name} 파싱 실패`);
+
+        for (const chapter of data.chapters || []) {
+          newChapters.push({
+            name: `${file.name} - ${chapter.title}`,
+            content: chapter.content,
+            result: '',
+            isDone: false,
+            stageProgress: 0,
+          });
+        }
+      }
+
+      if (newChapters.length) {
+        const nextIndex = Math.min(chapters.length, 29);
+        startTransition(() => {
+          setChapters((prev) => [...prev, ...newChapters].slice(0, 30));
+          setActiveChapterIndex(nextIndex);
+          setSource(newChapters[0].content || '');
+          setResult('');
+        });
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '문서 가져오기 실패');
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+      event.target.value = '';
+    }
+  };
+
+  const batchTranslateAll = async () => {
+    if (!chapters.length) return;
+    if (!confirm(`${chapters.length}개 챕터를 순차 번역할까요?`)) return;
+
+    setLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+    try {
+      for (let index = 0; index < chapters.length; index += 1) {
+        const chapter = chapters[index];
+        if (chapter.isDone && !confirm(`${chapter.name}은(는) 이미 완료되었습니다. 재번역할까요?`)) continue;
+        
+        setActiveChapterIndex(index);
+        setSource(chapter.content);
+        setStatusMsg(`BATCH ${index + 1}/${chapters.length}`);
+        
+        try {
+          const translated = await requestTranslation({
+            text: chapter.content,
+            from,
+            to,
+            provider,
+            apiKey: apiKeys[provider] || '',
+            mode: translationMode,
+            tone: 'natural',
+            genre: translationMode === 'novel' ? 'Novel' : 'General',
+            context: worldContext,
+            characterProfiles,
+            storySummary,
+            referenceIds,
+          });
+          setResult(translated);
+          setChapters((prev) => {
+            const next = [...prev];
+            next[index] = { ...next[index], result: translated, isDone: true, stageProgress: 5 };
+            return next;
+          });
+          successCount++;
+        } catch (err: any) {
+          console.error(`Batch error at idx ${index}:`, err);
+          setChapters((prev) => {
+             const next = [...prev];
+             next[index] = { ...next[index], error: err.message || 'Error' };
+             return next;
+          });
+          failCount++;
+        }
+      }
+      alert(`일괄 번역 종료: 성공 ${successCount}, 실패 ${failCount}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '일괄 작업 중 치명적 오류 발생');
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+    }
+  };
+
+  const [showExportOptions, setShowExportOptions] = useState(false);
+
+  const downloadAllResults = (format: 'txt' | 'md' | 'json' | 'html' | 'csv' = 'md') => {
+    if (!chapters.length) return;
+
+    let content = '';
+    let mimeType = 'text/plain';
+
+    if (format === 'md') {
+      content = chapters.map((chapter: any) => `# ${chapter.name}\n\n${chapter.result || '(미번역)'}`).join('\n\n---\n\n');
+      mimeType = 'text/markdown';
+    } else if (format === 'txt') {
+      content = chapters.map((chapter: any) => `[ ${chapter.name} ]\n\n${chapter.result || '(미번역)'}`).join('\n\n====================\n\n');
+      mimeType = 'text/plain';
+    } else if (format === 'json') {
+      content = JSON.stringify(chapters.map((c: any) => ({ title: c.name, content: c.result || '' })), null, 2);
+      mimeType = 'application/json';
+    } else if (format === 'html') {
+      content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Translation Results</title></head><body style="max-width: 800px; margin: 0 auto; padding: 20px; font-family: sans-serif;">` + 
+        chapters.map((c: any) => `<h2>${c.name}</h2><p>${(c.result || '').replace(/\\n/g, '<br>')}</p>`).join('<hr>') + 
+        `</body></html>`;
+      mimeType = 'text/html';
+    } else if (format === 'csv') {
+      content = '\\uFEFF"Chapter","Content"\\n' + chapters.map((c: any) => `"${c.name.replace(/"/g, '""')}","${(c.result || '').replace(/"/g, '""')}"`).join('\\n');
+      mimeType = 'text/csv';
+    }
+
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `eh-translator-results-${new Date().toISOString().slice(0, 10)}.${format}`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setShowExportOptions(false);
+  };
+
+  const refineResult = async () => {
+    if (!result.trim()) return;
+
+    setLoading(true);
+    setStatusMsg('FINAL POLISH');
+    try {
+      const refined = await requestTranslation({
+        text: result,
+        sourceText: source,
+        stage: 5,
+        from,
+        to,
+        provider: apiKeys.claude ? 'claude' : provider,
+        apiKey: apiKeys.claude || apiKeys[provider] || '',
+        mode: translationMode,
+        tone: 'natural',
+        genre: translationMode === 'novel' ? 'Novel' : 'General',
+        context: worldContext,
+        characterProfiles,
+        storySummary,
+      });
+      setResult(refined);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '다듬기 실패');
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+    }
+  };
+
+  const backTranslate = async () => {
+    if (!result.trim()) return;
+
+    setLoading(true);
+    setStatusMsg('BACK CHECK');
+    try {
+      const reversed = await requestTranslation({
+        text: result,
+        from: to,
+        to: from,
+        provider,
+        apiKey: apiKeys[provider] || '',
+        mode: 'general',
+      });
+      setBackResult(reversed);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : '역번역 검사 실패');
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+    }
+  };
+
+  const headerTextColor = backgroundMode === 'glacial' ? '#0f172a' : '#f8fafc';
+  const headerMutedColor = backgroundMode === 'glacial' ? '#64748b' : '#cbd5e1';
+  const headerChipSurface = backgroundMode === 'glacial' ? 'rgba(255,255,255,0.45)' : 'rgba(255,255,255,0.06)';
+  const accentTextColor = backgroundMode === 'glacial' ? '#2563eb' : '#93c5fd';
+  const activeChapter = activeChapterIndex !== null ? chapters[activeChapterIndex] : null;
+  const completedChapters = chapters.filter((chapter: any) => chapter.isDone).length;
+  const completionRate = chapters.length ? Math.round((completedChapters / chapters.length) * 100) : 0;
+  const workspaceName = projectName.trim() || 'Untitled Narrative Workspace';
+  const providerLabel = PROVIDERS.find((item) => item.id === provider)?.label || provider.toUpperCase();
+  const autoSaveLabel = lastSavedAt
+    ? new Date(lastSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    : '준비 완료';
+  const atmosphereLabel = backgroundMode === 'glacial' ? 'Editorial White' : 'Nebula Depth';
+  const pipelineLabel = translationMode === 'novel' ? 'Narrative Pipeline' : 'Precision General';
 
   return (
-    <div className={`min-h-screen bg-black text-gray-100 font-sans selection:bg-purple-500/30 ${isZenMode ? 'zen-mode' : ''}`}>
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-xl border-b border-gray-900 z-50 flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-black bg-linear-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent tracking-tighter">
-            EH-TRANSLATOR <span className="text-[10px] text-gray-600 font-normal ml-1">v3.0 SaaS</span>
-          </h1>
-          <div className="hidden lg:flex items-center gap-2 px-2 py-0.5 bg-gray-900 border border-gray-800 rounded cursor-pointer hover:bg-gray-800 transition-colors" onClick={() => setLockedFeature('Enterprise 팀스페이스 및 권한 관리 대시보드')}>
-             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Plan:</span>
-             <span className="text-[10px] font-bold text-emerald-400">Personal (Free)</span>
+    <div className={`min-h-screen theme-${backgroundMode} font-body ${isZenMode ? 'zen-mode' : ''}`}>
+      <header className="fixed left-0 right-0 top-0 z-50 flex h-20 items-center justify-between px-4 lg:px-6 glass-panel border-t-0 border-x-0 rounded-none">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-indigo-500 text-sm font-black text-white shadow-lg shadow-blue-500/20">
+            EH
           </div>
-          <div className="hidden xl:flex items-center gap-2 px-2 py-1 bg-gray-900/50 border border-gray-800/50 rounded cursor-pointer hover:bg-gray-800 transition-colors" onClick={() => setLockedFeature('SaaS 종량제 과금 모델 (토큰 시스템)')}>
-            <div className="w-24 bg-gray-800 h-1.5 rounded-full overflow-hidden">
-               <div className="bg-purple-500 h-full w-[15%]"></div>
-            </div>
-            <span className="text-[9px] text-gray-500 font-mono">15K / 100K Tokens</span>
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-[0.25em]" style={{ color: headerMutedColor }}>Narrative Translation Engine</div>
+            <h1 className="truncate text-xl font-black tracking-tight" style={{ color: headerTextColor }}>
+              EH Translator <span className="ml-2 text-[11px] font-medium" style={{ color: headerMutedColor }}>final</span>
+            </h1>
           </div>
-          {activeChapterIndex !== null && chapters[activeChapterIndex] && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-gray-900 rounded-full border border-gray-800">
-               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-               <span className="text-[10px] text-gray-400 font-medium">{chapters[activeChapterIndex].name} 작업 중</span>
+          <div className="hidden lg:flex items-center gap-2 rounded-full px-3 py-2 backdrop-blur-xl" style={{ background: headerChipSurface }}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: headerMutedColor }}>Plan</span>
+            <span className="text-xs font-bold" style={{ color: accentTextColor }}>Personal</span>
+          </div>
+          {activeChapter && (
+            <div className="hidden md:flex items-center gap-3 rounded-full px-4 py-2 backdrop-blur-xl" style={{ background: headerChipSurface }}>
+               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+               <div className="flex flex-col">
+                 <span className="text-[10px] font-black uppercase tracking-tight" style={{ color: headerTextColor }}>{activeChapter.name}</span>
+                 <span className="text-[8px] opacity-60 font-bold" style={{ color: headerMutedColor }}>SAVED {autoSaveLabel}</span>
+               </div>
             </div>
           )}
         </div>
-        
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2 lg:gap-3">
+          <div className="hidden lg:flex items-center gap-1 rounded-full p-1 shadow-sm backdrop-blur-xl" style={{ background: headerChipSurface }}>
+            {BACKGROUND_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => setBackgroundMode(mode.id)}
+                className={`rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all ${
+                  backgroundMode === mode.id
+                    ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'hover:brightness-110'
+                }`}
+                style={backgroundMode === mode.id ? undefined : { color: headerMutedColor }}
+                title={mode.note}
+              >
+                {mode.id === 'glacial' ? 'White' : 'Nebula'}
+              </button>
+            ))}
+          </div>
           {isAuthLoaded && !userId && (
             <SignInButton mode="modal">
-              <button className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-[10px] font-bold text-white transition-all shadow-lg shadow-indigo-500/20">
-                🚀 시작하기
+              <button className="rounded-full bg-linear-to-r from-blue-600 to-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-white shadow-lg shadow-blue-500/20 transition-all hover:brightness-110">
+                시작하기
               </button>
             </SignInButton>
           )}
           {isAuthLoaded && userId && (
-            <UserButton appearance={{ elements: { userButtonAvatarBox: "shadow-lg shadow-purple-500/20 w-8 h-8" } }} />
+            <UserButton appearance={{ elements: { userButtonAvatarBox: 'shadow-lg w-9 h-9' } }} />
           )}
 
           <button 
             onClick={() => setIsZenMode(!isZenMode)}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${isZenMode ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'}`}
+            className={`rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all ${
+              isZenMode
+                ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20'
+                : 'backdrop-blur-xl hover:brightness-110'
+            }`}
+            style={isZenMode ? undefined : { background: headerChipSurface, color: headerMutedColor }}
           >
-            {isZenMode ? '🧘 ZEN MODE ON' : '👁️ FOCUS MODE'}
+            {isZenMode ? 'Focus On' : 'Focus Mode'}
           </button>
           <button onClick={() => setShowSettings(!showSettings)} 
-            className="p-2 hover:bg-gray-900 rounded-lg transition-colors border border-transparent hover:border-gray-800">
+            className="rounded-full p-2.5 backdrop-blur-xl transition-all hover:brightness-110"
+            style={{ background: headerChipSurface, color: headerMutedColor }}>
             ⚙️
           </button>
         </div>
       </header>
 
-      <main className="pt-20 flex h-[calc(100vh-80px)] overflow-hidden">
+      <main className="flex h-[calc(100vh-80px)] overflow-hidden pt-20">
         {/* Left Sidebar: Chapters */}
         {!isZenMode && (
-          <aside className="w-64 border-r border-gray-900 bg-gray-950/20 overflow-y-auto p-4 hidden lg:block">
+          <aside className="w-64 border-r border-gray-900/50 bg-sidebar overflow-y-auto p-4 hidden lg:block glass-panel border-y-0 border-l-0 rounded-none">
             <div className="flex flex-col gap-2 mb-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Chapters</h3>
-                <label className="cursor-pointer p-1.5 bg-gray-900 hover:bg-gray-800 rounded border border-gray-800 transition-colors">
-                  <span className="text-[10px]">➕ 일반 텍스트 추가</span>
-                  <input type="file" multiple onChange={importDocument} className="hidden" accept=".txt,.md" />
-                </label>
-              </div>
-              <div className="flex gap-2 justify-end mb-2">
-                <label className="cursor-pointer text-[10px] px-2 py-1 bg-purple-900/40 border border-purple-500/50 text-purple-300 hover:bg-purple-900/60 transition-colors flex items-center justify-center rounded-lg shadow-sm w-1/3">
-                  <span className="font-bold">EPUB</span>
-                  <input type="file" multiple onChange={importDocument} className="hidden" accept=".epub" />
-                </label>
-                <label className="cursor-pointer text-[10px] px-2 py-1 bg-red-900/40 border border-red-500/50 text-red-300 hover:bg-red-900/60 transition-colors flex items-center justify-center rounded-lg shadow-sm w-1/3">
-                  <span className="font-bold">PDF</span>
-                  <input type="file" multiple onChange={importDocument} className="hidden" accept=".pdf" />
-                </label>
-                <label className="cursor-pointer text-[10px] px-2 py-1 bg-blue-900/40 border border-blue-500/50 text-blue-300 hover:bg-blue-900/60 transition-colors flex items-center justify-center rounded-lg shadow-sm w-1/3">
-                  <span className="font-bold">DOCX</span>
-                  <input type="file" multiple onChange={importDocument} className="hidden" accept=".docx" />
-                </label>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="theme-kicker">Chapters</h3>
+                  <label className="theme-pill cursor-pointer rounded-xl px-3 py-2 text-[10px] font-bold transition-colors hover:brightness-105" title="지원 형식: txt, md, epub, pdf, docx">
+                    <span className="text-[10px]">➕ 문서 읽어오기</span>
+                    <input type="file" multiple onChange={importDocument} className="hidden" accept=".txt,.md,.epub,.pdf,.docx" />
+                  </label>
+                </div>
+                <div className="text-[8px] opacity-60 text-right uppercase tracking-widest mt-1">
+                  5개 대표형식 (TXT, MD, EPUB, PDF, DOCX)
+                </div>
               </div>
             </div>
 
             {chapters.length > 0 && (
-              <div className="flex gap-2 mb-3">
-                <button onClick={batchTranslateAll} disabled={loading} className="flex-1 bg-purple-900/30 hover:bg-purple-900/50 text-[9px] py-1.5 rounded-lg border border-purple-800/30 transition-all">
-                  ALL TRANSLATE
-                </button>
-                <button onClick={downloadAllResults} className="flex-1 bg-gray-900 hover:bg-gray-800 text-[9px] py-1.5 rounded-lg border border-gray-800 transition-all">
-                  DOWNLOAD ALL
-                </button>
+              <div className="flex flex-col gap-2 mb-3">
+                <div className="flex gap-2">
+                  <button onClick={batchTranslateAll} disabled={loading} className="flex-1 rounded-xl bg-linear-to-r from-blue-600/80 to-indigo-600/80 py-2 text-[10px] font-black uppercase tracking-[0.15em] text-white transition-all hover:brightness-110">
+                    ALL BATCH
+                  </button>
+                  <button onClick={() => setShowExportOptions(!showExportOptions)} className="theme-pill flex-1 rounded-xl py-2 text-[10px] font-black uppercase tracking-[0.15em] transition-all hover:brightness-105">
+                    EXPORT (5형식)
+                  </button>
+                </div>
+                {showExportOptions && (
+                  <div className="grid grid-cols-5 gap-1 animate-in fade-in slide-in-from-top-2">
+                    {['txt', 'md', 'json', 'html', 'csv'].map((fmt) => (
+                      <button key={fmt} onClick={() => downloadAllResults(fmt as any)} className="theme-pill text-[8px] py-1.5 rounded-lg font-bold uppercase hover:bg-white/10 transition-colors">
+                        {fmt}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             
             <div className="space-y-1">
               {chapters.length === 0 && (
-                <div className="text-[10px] text-gray-700 text-center py-10 italic">불러온 파일이 없습니다.</div>
+                <div className="theme-text-secondary py-10 text-center text-[10px] italic">불러온 파일이 없습니다.</div>
               )}
               {chapters.map((ch, idx) => (
                 <div 
                   key={idx}
-                  onClick={() => setActiveChapterIndex(idx)}
-                  className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all border ${activeChapterIndex === idx ? 'bg-purple-900/20 border-purple-900/50 text-purple-200' : 'border-transparent hover:bg-gray-900/50 text-gray-500'}`}
+                  onClick={() => openChapter(idx)}
+                  className={`chapter-item group flex cursor-pointer items-center justify-between rounded-xl border p-2.5 transition-all ${activeChapterIndex === idx ? 'chapter-item-active' : ''}`}
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <span className={`text-[9px] font-mono px-1 rounded ${ch.isDone ? 'bg-green-500/20 text-green-400' : 'opacity-40'}`}>
+                    <span className={`chapter-index rounded px-1 text-[9px] font-mono ${ch.isDone ? 'chapter-index-done' : 'opacity-70'}`}>
                       {ch.isDone ? '✓' : (idx + 1)}
                     </span>
-                    <span className={`text-xs truncate ${ch.isDone ? 'text-gray-300' : 'text-gray-500'}`}>{ch.name}</span>
+                    <span className="truncate text-xs font-medium">{ch.name}</span>
                   </div>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); setChapters(prev => prev.filter((_, i) => i !== idx)); if(activeChapterIndex === idx) setActiveChapterIndex(null); }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 text-[10px]"
-                  >
-                    ✕
-                  </button>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const nextChapters = chapters.filter((_: any, chapterIndex: number) => chapterIndex !== idx);
+                      setChapters(nextChapters);
+
+                      if (activeChapterIndex === idx) {
+                        const fallbackIndex = nextChapters.length ? Math.min(idx, nextChapters.length - 1) : null;
+                        openChapter(fallbackIndex, nextChapters);
+                        return;
+                      }
+
+                      if (activeChapterIndex !== null && activeChapterIndex > idx) {
+                        setActiveChapterIndex(activeChapterIndex - 1);
+                      }
+                    }}
+                    className="theme-text-secondary p-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500"
+                  >✕</button>
                 </div>
               ))}
             </div>
@@ -799,23 +801,83 @@ export default function Home() {
 
         {/* Center: Editor Area */}
         <section className={`flex-1 overflow-y-auto px-6 pb-20 transition-all ${isZenMode ? 'max-w-5xl mx-auto' : ''}`}>
+          {!isZenMode && (
+            <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.75fr)_minmax(240px,0.8fr)]">
+              <div className="workspace-hero glass-panel rounded-4xl p-6">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0">
+                    <div className="theme-kicker">Premium Narrative Workspace</div>
+                    <h2 className="mt-3 truncate text-2xl font-black tracking-tight theme-text-primary">{workspaceName}</h2>
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed theme-text-secondary">
+                      장편 번역에서 문체 일관성, 캐릭터 보존, 빠른 편집 흐름을 함께 잡는 에디토리얼 작업실입니다.
+                    </p>
+                  </div>
+                  <div className="theme-pill shrink-0 rounded-3xl px-4 py-3">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] theme-text-secondary">{atmosphereLabel}</div>
+                    <div className="mt-1 text-sm font-bold theme-text-primary">{pipelineLabel}</div>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">
+                    {from.toUpperCase()} → {to.toUpperCase()}
+                  </div>
+                  <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">{providerLabel}</div>
+                  <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">
+                    {chapters.length ? `${chapters.length}개 챕터 관리 중` : '문서를 불러오면 챕터가 여기에 쌓입니다.'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="metric-card glass-panel rounded-4xl p-5">
+                <div className="theme-kicker">Autosave</div>
+                <div className="mt-3 text-3xl font-black tracking-tight theme-text-primary">{autoSaveLabel}</div>
+                <p className="mt-3 text-sm leading-relaxed theme-text-secondary">
+                  {loading ? `${statusMsg || 'PROCESSING'} 단계가 진행 중입니다.` : '자동 저장을 지연 처리해서 타이핑과 이동이 더 가볍게 유지됩니다.'}
+                </p>
+                <div className={`mt-4 rounded-2xl px-3 py-3 text-[11px] font-semibold ${loading ? 'loading-ribbon' : 'theme-pill'}`}>
+                  {loading ? '엔진이 결과를 정리하는 중입니다.' : '변경 내용은 조용히 로컬 상태와 동기화됩니다.'}
+                </div>
+              </div>
+
+              <div className="metric-card glass-panel rounded-4xl p-5">
+                <div className="theme-kicker">Progress</div>
+                <div className="mt-3 flex items-end gap-2">
+                  <span className="text-3xl font-black tracking-tight theme-text-primary">{completionRate}%</span>
+                  <span className="pb-1 text-[11px] font-semibold theme-text-secondary">{completedChapters}/{chapters.length || 0} ready</span>
+                </div>
+                <div className="metric-bar mt-4">
+                  <span style={{ width: `${completionRate}%` }} />
+                </div>
+                <p className="mt-3 text-sm leading-relaxed theme-text-secondary">
+                  {activeChapter
+                    ? `${activeChapter.name}${activeChapter.stageProgress ? ` · Stage ${activeChapter.stageProgress}` : ''}`
+                    : '활성 챕터를 선택하면 진행 단계가 여기 표시됩니다.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Style Analysis Result (Compact) */}
           {styleAnalysis && !isZenMode && (
             <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
-               <div className="p-4 rounded-2xl bg-linear-to-br from-purple-950/40 to-indigo-950/40 border border-purple-900/30 flex items-center justify-between">
+               <div className="themed-insight glass-panel flex items-center justify-between gap-5 rounded-4xl p-5">
                  <div>
-                    <h4 className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">AI Style Feedback</h4>
-                    <p className="text-sm text-purple-100 font-medium">이 글은 <span className="underline decoration-purple-500">{styleAnalysis.genre}</span> 장르의 <span className="underline decoration-indigo-500">{styleAnalysis.tone}</span> 톤을 가지고 있습니다.</p>
+                    <h4 className="theme-kicker mb-2">AI Style Feedback</h4>
+                    <p className="text-sm font-medium theme-text-primary">
+                      이 글은 <span style={{ color: accentTextColor }}>{styleAnalysis.genre}</span> 장르의{' '}
+                      <span style={{ color: accentTextColor }}>{styleAnalysis.tone}</span> 톤을 가지고 있습니다.
+                    </p>
                  </div>
                  <div className="flex gap-2">
-                   <div className="text-center px-3 border-r border-purple-900/30">
-                     <div className="text-[9px] text-purple-500 uppercase">Fluency</div>
-                     <div className="text-xs font-bold text-white">{styleAnalysis.metric.fluency}</div>
-                   </div>
-                   <div className="text-center px-3">
-                     <div className="text-[9px] text-purple-500 uppercase">Immersive</div>
-                     <div className="text-xs font-bold text-white">{styleAnalysis.metric.immersion}</div>
-                   </div>
+                    <div className="border-r px-3 text-center border-white/10">
+                      <div className="text-[9px] uppercase theme-text-secondary">Fluency</div>
+                      <div className="text-xs font-bold theme-text-primary">{styleAnalysis.metric.fluency}</div>
+                    </div>
+                    <div className="text-center px-3">
+                      <div className="text-[9px] uppercase theme-text-secondary">Immersive</div>
+                      <div className="text-xs font-bold theme-text-primary">{styleAnalysis.metric.immersion}</div>
+                    </div>
                  </div>
                </div>
             </div>
@@ -823,184 +885,109 @@ export default function Home() {
 
           {/* Settings Overlay */}
           {showSettings && (
-            <div className="mb-6 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-3 mb-4 p-4 border border-purple-900/50 bg-purple-950/20 rounded-xl space-y-4">
-                  <div>
-                     <label className="text-[10px] text-purple-400 uppercase font-bold mb-2 block tracking-widest">
-                       현재 프로젝트 (볼륨 30화 제한)
-                     </label>
-                     <div className="flex gap-2 items-center">
-                        <input 
-                           type="text" 
-                           value={projectName} 
-                           onChange={(e) => setProjectName(e.target.value)} 
-                           placeholder="프로젝트명 (예: 소드마스터 1권)" 
-                           className="flex-1 bg-black border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:border-purple-500 outline-none"
-                        />
-                        <button 
-                           onClick={() => {
-                              if(confirm('새 프로젝트를 시작하시겠습니까? 현재 UI 내용은 초기화됩니다 (기존 내용은 클라우드에 보존됨).')) {
-                                 setProjectId(Date.now().toString());
-                                 setProjectName('');
-                                 setChapters([]);
-                                 setSource('');
-                                 setResult('');
-                                 setActiveChapterIndex(null);
-                                 setReferenceIds([]);
-                              }
-                           }}
-                           className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-[10px] font-bold transition-all"
-                        >새 프로젝트 빙의</button>
-                     </div>
+            <div className="mb-6 p-6 rounded-5xl glass-panel shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-3 p-5 bg-purple-500/5 rounded-2xl border border-purple-500/10 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="theme-kicker mb-3 block">Visual Atmosphere (테마)</label>
+                      <div className="flex gap-3">
+                        {BACKGROUND_MODES.map((m) => (
+                          <button key={m.id} onClick={() => setBackgroundMode(m.id)}
+                            className={`flex-1 rounded-xl border p-3 text-left transition-all ${backgroundMode === m.id ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-pill hover:brightness-105'}`}>
+                            <div className="text-[10px] font-black uppercase tracking-tight">{m.label}</div>
+                            <div className="text-[8px] opacity-70 mt-0.5">{m.note}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="theme-kicker mb-3 block">현재 프로젝트 (볼륨 30화 제한)</label>
+                      <div className="flex gap-2 items-center">
+                        <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} 
+                          placeholder="프로젝트명" className="theme-field flex-1 rounded-lg px-3 py-2 text-xs outline-none" />
+                        <button onClick={() => { if(confirm('초기화 하시겠습니까?')) { setProjectId(Date.now().toString()); setProjectName(''); setChapters([]); setSource(''); setResult(''); } }}
+                          className="rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 px-3 py-2 text-[10px] font-bold text-white transition-all hover:brightness-110">신규 생성</button>
+                      </div>
+                    </div>
                   </div>
                   <div>
-                     <label className="text-[10px] text-gray-400 uppercase font-bold mb-2 block tracking-widest">
-                       이전 프로젝트 참조 (Cross-Reference)
-                     </label>
-                     <p className="text-[9px] text-gray-500 mb-2">과거 프로젝트의 동기화된 스토리 요약과 캐릭터 정보를 AI가 번역 컨텍스트로 불러옵니다.</p>
-                     <div className="flex flex-wrap gap-2">
-                        {projectList.filter((p:any) => p.id !== projectId).map((p:any) => (
-                           <button 
-                              key={p.id} 
-                              onClick={() => setReferenceIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
-                              className={`px-3 py-1 text-[10px] rounded-full transition-all border ${referenceIds.includes(p.id) ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'}`}
-                           >
-                              {p.project_name || `임시 세션 (${p.id.slice(0, 4)})`}
-                           </button>
-                        ))}
-                        {projectList.filter((p:any) => p.id !== projectId).length === 0 && <span className="text-[10px] text-gray-600 italic">참조 가능한 이전 프로젝트가 없습니다.</span>}
-                     </div>
+                    <label className="theme-kicker mb-2 block">이전 프로젝트 참조 (Cross-Reference)</label>
+                    <div className="flex flex-wrap gap-2 text-white">
+                       {projectList.filter((p:any) => p.id !== projectId).map((p:any) => (
+                          <button key={p.id} onClick={() => setReferenceIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
+                             className={`rounded-full border px-3 py-1 text-[10px] transition-all ${referenceIds.includes(p.id) ? 'bg-indigo-600 border-indigo-500 text-white' : 'theme-pill hover:brightness-105'}`}>
+                             {p.project_name || p.id.slice(0,4)}
+                          </button>
+                       ))}
+                    </div>
                   </div>
                 </div>
-
                 <div className="lg:col-span-2">
-                  <label className="text-[10px] text-purple-400 uppercase font-bold mb-2 flex tracking-widest items-center gap-2">
-                    Ensemble API Keys 
-                    <span className="text-[8px] px-1.5 py-0.5 bg-purple-900 text-purple-200 rounded">REQUIRED FOR 4-STAGE PIPELINE</span>
-                  </label>
+                  <label className="theme-kicker mb-2 block">Ensemble API Keys</label>
                   <div className="space-y-2">
                     {PROVIDERS.map(p => (
                       <div key={p.id} className="flex gap-2 items-center">
-                        <span className="w-28 text-[9px] text-gray-500 uppercase tracking-wider">{p.label}</span>
-                        <input 
-                          type="password" 
-                          value={apiKeys[p.id] || ''} 
-                          onChange={(e) => setApiKeys({...apiKeys, [p.id]: e.target.value})} 
-                          placeholder={`${p.role}`} 
-                          className="flex-1 bg-black border border-gray-800 focus:border-purple-500/50 rounded-lg px-3 py-1.5 text-xs outline-none transition-all placeholder:text-[10px]" 
-                        />
+                        <span className="theme-text-secondary w-24 text-[9px] uppercase">{p.label}</span>
+                        <input type="password" value={apiKeys[p.id] || ''} onChange={(e) => setApiKeys({...apiKeys, [p.id]: e.target.value})} 
+                          className="theme-field flex-1 rounded-lg px-3 py-2 text-xs outline-none" placeholder={p.role} />
                       </div>
                     ))}
                   </div>
                 </div>
-                
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block tracking-widest">Base Provider (For Fast Draft)</label>
-                    <select value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full bg-black border border-gray-800 rounded-lg px-3 py-2 text-xs">
+                   <label className="theme-kicker block">Settings</label>
+                   <select value={provider} onChange={(e) => setProvider(e.target.value)} className="theme-field w-full rounded-lg px-3 py-2 text-xs outline-none">
                       {PROVIDERS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block tracking-widest">Backup Management</label>
-                    <div className="flex gap-2">
-                        <button onClick={exportData} className="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-[9px] font-bold">EXPORTS</button>
-                        <label className="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-lg text-[9px] font-bold text-center cursor-pointer">
-                          IMPORTS
-                          <input type="file" onChange={importData} className="hidden" />
-                        </label>
-                    </div>
-                  </div>
+                   </select>
+                   <div className="flex gap-2">
+                      <button onClick={exportData} className="theme-pill flex-1 rounded-lg py-2 text-[9px] font-bold hover:brightness-105">EXTRACT</button>
+                      <label className="theme-pill flex-1 cursor-pointer rounded-lg py-2 text-center text-[9px] font-bold hover:brightness-105">INJECT<input type="file" onChange={importData} className="hidden" /></label>
+                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {isCatMode ? (
+         {isCatMode ? (
             <div className="col-span-1 lg:col-span-2 space-y-3 h-[70vh] overflow-y-auto pr-2 scrollbar-hide">
               {source.split('\n').map((sLine, idx) => {
                  const rLines = result.split('\n');
                  const rLine = rLines[idx] || '';
                  if(!sLine.trim() && !rLine.trim()) return null;
                  return (
-                   <div key={idx} className="flex flex-col md:flex-row gap-2 bg-gray-900/50 p-4 rounded-3xl border border-gray-800 hover:border-gray-700 transition-colors">
-                     <textarea 
-                        value={sLine} 
-                        onChange={(e) => { const arr = source.split('\n'); arr[idx] = e.target.value; setSource(arr.join('\n')) }}
-                        className="w-full bg-transparent text-gray-400 text-xs resize-none outline-none leading-relaxed min-h-[60px]"
-                        placeholder="원문..."
-                     />
-                     <textarea 
-                        value={rLine} 
-                        onChange={(e) => { const arr = result.split('\n'); arr[idx] = e.target.value; setResult(arr.join('\n')) }}
-                        className="w-full bg-transparent text-indigo-300 font-bold text-xs resize-none outline-none leading-relaxed min-h-[60px]"
-                        placeholder="번역..."
-                     />
+                   <div key={idx} className="flex flex-col md:flex-row gap-2 glass-panel p-4 rounded-3xl animate-fade-in">
+                  <textarea value={sLine} readOnly className="editor-pane w-full resize-none bg-transparent text-xs leading-relaxed outline-none" />
+                     <textarea value={rLine} readOnly className="result-pane w-full bg-transparent text-xs font-bold resize-none outline-none leading-relaxed" />
                    </div>
                  )
               })}
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Source Column */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                     <select value={from} onChange={(e) => setFrom(e.target.value)}
-                       className="bg-transparent text-xs font-bold text-gray-400 outline-none border-b border-gray-800 pb-1 focus:border-purple-500 transition-all">
-                       {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
-                     </select>
-                     <span className="text-gray-700">→</span>
-                     <select value={to} onChange={(e) => setTo(e.target.value)}
-                       className="bg-transparent text-xs font-bold text-indigo-400 outline-none border-b border-gray-800 pb-1 focus:border-indigo-500 transition-all">
-                       {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
-                     </select>
-                   </div>
-                   <button onClick={analyzeStyle} className="text-[10px] text-gray-600 hover:text-purple-400 transition-colors">⚡ AI 분석</button>
+                <div className="flex items-center gap-3 mb-2">
+                  <select value={from} onChange={(e) => setFrom(e.target.value)} className="theme-pill rounded-full px-3 py-2 text-xs font-bold outline-none">
+                    {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+                  </select>
+                  <span className="theme-text-secondary">→</span>
+                  <select value={to} onChange={(e) => setTo(e.target.value)} className="theme-pill rounded-full px-3 py-2 text-xs font-bold outline-none" style={{ color: accentTextColor }}>
+                    {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+                  </select>
                 </div>
-                
-                <div className="relative group">
-                  <textarea 
-                    value={source} onChange={(e) => setSource(e.target.value)}
-                    placeholder="원고를 입력하거나 파일을 추가하세요..."
-                    className="w-full h-[65vh] bg-gray-900/30 backdrop-blur-sm border border-gray-800 rounded-3xl p-6 text-sm leading-relaxed resize-none focus:ring-1 focus:ring-purple-500/50 outline-none transition-all scrollbar-hide"
-                  />
-                  <div className="absolute bottom-4 right-6 text-[10px] text-gray-700 font-mono uppercase">
-                    {source.length.toLocaleString()} Chars
-                  </div>
+                <div className="relative">
+                  <textarea value={source} onChange={(e) => setSource(e.target.value)} placeholder="원고 입력..."
+                    className="editor-pane w-full h-[65vh] glass-panel rounded-4xl p-8 text-sm leading-loose resize-none outline-none transition-all scrollbar-hide font-headline focus:ring-2 focus:ring-blue-500/20" />
+                  <div className="theme-text-secondary absolute bottom-4 right-6 text-[9px] font-mono">{source.length} chars</div>
                 </div>
               </div>
-
-              {/* Result Column */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between h-7">
-                  <div className="flex gap-2">
-                    {result && !isZenMode && (
-                      <>
-                        <button onClick={refineResult} className="text-[10px] bg-indigo-950/50 hover:bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded border border-indigo-900/50 transition-all">🪄 다듬기</button>
-                        <button onClick={backTranslate} className="text-[10px] bg-emerald-950/50 hover:bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded border border-emerald-900/50 transition-all">🔍 무결성 검수</button>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-indigo-500/50 font-bold uppercase tracking-widest">Translated Draft</div>
+                <div className="h-7 mb-2 flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: accentTextColor }}>Result Draft</span>
                 </div>
-
-                <div className="relative group">
-                  <textarea 
-                    value={result} readOnly={loading} onChange={(e) => setResult(e.target.value)}
-                    placeholder={loading ? "번역 작업이 진행 중입니다..." : "결과물이 여기에 표시됩니다..."}
-                    className={`w-full h-[65vh] bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-3xl p-6 text-sm leading-relaxed resize-none transition-all outline-none ${loading ? 'opacity-40 animate-pulse' : ''} ${result ? 'focus:border-indigo-500' : ''}`}
-                  />
-                  {result && (
-                    <button onClick={() => { navigator.clipboard.writeText(result); alert('복사되었습니다!'); }}
-                      className="absolute top-4 right-5 p-2 bg-gray-800/80 hover:bg-gray-700 rounded-xl transition-all opacity-0 group-hover:opacity-100">
-                      📋
-                    </button>
-                  )}
-                  <div className="absolute bottom-4 right-6 text-[10px] text-gray-700 font-mono uppercase">
-                    {result.length.toLocaleString()} Chars
-                  </div>
+                <div className="relative">
+                  <textarea value={result} readOnly className="result-pane w-full h-[65vh] glass-panel rounded-4xl p-8 text-sm leading-loose resize-none outline-none transition-all scrollbar-hide font-headline" />
+                  <div className="theme-text-secondary absolute bottom-4 right-6 text-[9px] font-mono">{result.length} chars</div>
                 </div>
               </div>
             </div>
@@ -1008,205 +995,63 @@ export default function Home() {
 
           {/* Action Bar */}
           <div className="mt-8 max-w-4xl mx-auto space-y-3">
-            {/* Mode Tab Selector */}
-            <div className="flex items-center gap-1 p-1 bg-gray-950 border border-gray-900 rounded-2xl">
-              <button
-                onClick={() => setTranslationMode('novel')}
-                className={`flex-1 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
-                  translationMode === 'novel'
-                    ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
-                    : 'text-gray-600 hover:text-gray-400'
-                }`}
-              >
-                📖 소설 특화 모드
-                <span className="ml-1.5 text-[8px] opacity-70">5단계 앙상블</span>
-              </button>
-              <button
-                onClick={() => setTranslationMode('general')}
-                className={`flex-1 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
-                  translationMode === 'general'
-                    ? 'bg-linear-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20'
-                    : 'text-gray-600 hover:text-gray-400'
-                }`}
-              >
-                📄 범용 정확도 모드
-                <span className="ml-1.5 text-[8px] opacity-70">2단계 (정밀 교정)</span>
-              </button>
+            <div className="flex items-center gap-2 p-1 glass-panel rounded-2xl">
+              <button onClick={() => setTranslationMode('novel')} className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest transition-all ${translationMode === 'novel' ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-text-secondary hover:brightness-110'}`}>📖 NOVEL MODE</button>
+              <button onClick={() => setTranslationMode('general')} className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest transition-all ${translationMode === 'general' ? 'bg-linear-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20' : 'theme-text-secondary hover:brightness-110'}`}>📄 GENERAL MODE</button>
             </div>
 
-            {/* URL Import Panel */}
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowUrlImport(v => !v)}
-                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 transition-all"
-              >
-                🌐 URL 읽어오기
-              </button>
+              <button onClick={() => setShowUrlImport(!showUrlImport)} className="theme-pill px-4 py-3 rounded-xl text-[10px] font-bold">🌐 IMPORT URL</button>
               {showUrlImport && (
-                <div className="flex-1 flex gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-                  <input
-                    type="url"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && importUrl()}
-                    placeholder="https://... (뉴스, 블로그 등 공개 URL)"
-                    className="flex-1 bg-black border border-gray-800 focus:border-emerald-500 rounded-xl px-4 py-2 text-xs outline-none transition-all"
-                  />
-                  <button
-                    onClick={importUrl}
-                    disabled={loading || !urlInput.trim()}
-                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-xl text-[10px] font-bold text-white transition-all disabled:opacity-40"
-                  >
-                    가져오기
-                  </button>
+                <div className="flex-1 flex gap-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                  <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://..." className="theme-field flex-1 rounded-xl px-4 py-2 text-xs outline-none" />
+                  <button onClick={importUrl} disabled={loading} className="px-6 py-2 bg-emerald-600 rounded-xl text-[10px] font-bold text-white">FETCH</button>
                 </div>
               )}
             </div>
 
-            {/* Translate Buttons */}
             <div className="flex gap-4">
-              <button 
-                onClick={translate} 
-                disabled={loading || !source.trim()}
-                className="flex-1 py-4 bg-gray-900 hover:bg-gray-850 rounded-2xl text-[11px] font-black tracking-widest text-gray-400 border border-gray-800 transition-all disabled:opacity-20"
-              >
-                FAST DRAFT
-              </button>
-              <button 
-                onClick={deepTranslate} 
-                disabled={loading || !source.trim()}
-                className={`flex-2 py-4 rounded-2xl text-[11px] font-black tracking-widest text-white shadow-xl transition-all disabled:opacity-20 relative overflow-hidden ${
-                  translationMode === 'novel'
-                    ? 'bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-500/20'
-                    : 'bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/20'
-                }`}
-              >
-                {statusMsg ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                    {statusMsg}
-                  </div>
-                ) : (
-                  translationMode === 'novel'
-                    ? 'PRO NOVEL PIPELINE (5-STAGE)'
-                    : 'GENERAL TRANSLATE (2-STAGE)'
-                )}
+              <button onClick={translate} disabled={loading || !source.trim()} className="theme-pill flex-1 rounded-2xl py-5 text-[11px] font-black tracking-widest transition-all hover:brightness-105">FAST DRAFT</button>
+              <button onClick={deepTranslate} disabled={loading || !source.trim()} 
+                 className={`flex-2 py-5 rounded-2xl text-[11px] font-black tracking-widest text-white shadow-2xl transition-all ${translationMode === 'novel' ? 'bg-linear-to-r from-purple-600 to-indigo-600' : 'bg-linear-to-r from-emerald-600 to-teal-600'}`}>
+                 {statusMsg || (translationMode === 'novel' ? 'DEEP NOVEL PIPELINE' : 'ACCURATE GENERAL')}
               </button>
             </div>
           </div>
         </section>
 
-        {/* Right Sidebar: Context & Lore */}
+        {/* Right Sidebar */}
         {!isZenMode && (
-          <aside className="w-80 border-l border-gray-900 bg-gray-950/20 overflow-y-auto p-5 hidden xl:block space-y-6">
-            <div>
-              <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3 flex items-center justify-between">
-                World Context (Lore)
-                <span className="text-[8px] px-1.5 bg-gray-900 rounded">FIXED</span>
-              </h3>
-              <textarea 
-                value={worldContext} onChange={(e) => setWorldContext(e.target.value)}
-                placeholder="고정된 세계관, 고유 명사 설정을 적어주세요. 모든 번역에 반영됩니다."
-                className="w-full h-32 bg-gray-900 border border-gray-800 rounded-xl p-3 text-[11px] leading-relaxed resize-none focus:border-indigo-500 transition-colors placeholder:text-gray-700"
-              />
+          <aside className="w-80 glass-panel border-y-0 border-r-0 rounded-none overflow-y-auto p-6 hidden xl:block space-y-10 bg-sidebar">
+            <div className="space-y-4">
+              <h3 className="theme-kicker">World Lore</h3>
+              <textarea value={worldContext} onChange={(e) => setWorldContext(e.target.value)} className="theme-field editor-pane w-full h-32 rounded-xl p-4 text-[11px] leading-relaxed resize-none outline-none" />
             </div>
-
-            <div>
-              <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3 flex items-center justify-between">
-                Character Tone Profiles
-                <button onClick={() => setShowCharacters(!showCharacters)} className="text-purple-500 font-normal">Edit</button>
-              </h3>
-              {showCharacters && (
-                <textarea 
-                  value={characterProfiles} onChange={(e) => setCharacterProfiles(e.target.value)}
-                  placeholder="예: 
-엘라: 10살 소녀, 존댓말, 짧은 문장
-카일: 빙의한 현대인 독백, 시니컬, 반말"
-                  className="w-full h-32 bg-gray-900 border border-emerald-900/40 focus:border-emerald-500 rounded-xl p-3 text-[10px] mb-3 font-mono placeholder:text-gray-700 transition-colors"
-                />
-              )}
+            <div className="space-y-4">
+              <h3 className="theme-kicker flex justify-between">Characters <button onClick={() => setShowCharacters(!showCharacters)} style={{ color: accentTextColor }}>Edit</button></h3>
+              {showCharacters && <textarea value={characterProfiles} onChange={(e) => setCharacterProfiles(e.target.value)} className="theme-field editor-pane w-full h-40 rounded-xl p-4 text-[10px] outline-none" />}
             </div>
-
-            <div>
-              <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3 flex items-center justify-between">
-                Story Bible (Summary)
-                <button onClick={() => setShowSummary(!showSummary)} className="text-purple-500 font-normal">Edit</button>
-              </h3>
-              {showSummary && (
-                <textarea 
-                  value={storySummary} onChange={(e) => setStorySummary(e.target.value)}
-                  placeholder="요약본이 이 곳에 자동 누적되어 다음 화 번역의 일관성을 유지합니다."
-                  className="w-full h-40 bg-gray-900 border border-indigo-900/40 focus:border-indigo-500 rounded-xl p-3 text-[10px] mb-3 font-mono placeholder:text-gray-700 transition-colors scrollbar-hide"
-                />
-              )}
+            <div className="space-y-4">
+              <h3 className="theme-kicker flex justify-between">Story Bible <button onClick={() => setShowSummary(!showSummary)} style={{ color: accentTextColor }}>Edit</button></h3>
+              {showSummary && <textarea value={storySummary} onChange={(e) => setStorySummary(e.target.value)} className="theme-field editor-pane w-full h-40 rounded-xl p-4 text-[10px] outline-none" />}
             </div>
-
-            <div>
-              <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3 flex items-center justify-between">
-                Terms (Glossary)
-                <button onClick={() => setShowGlossary(!showGlossary)} className="text-purple-500 font-normal">Edit</button>
-              </h3>
-              {showGlossary && (
-                <textarea 
-                  value={glossary} onChange={(e) => setGlossary(e.target.value)}
-                  placeholder="노아 = NOA\n의회 = Council"
-                  className="w-full h-32 bg-gray-900 border border-gray-800 rounded-xl p-3 text-[10px] mb-3 font-mono"
-                />
-              )}
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {TONES.map(t => (
-                  <button key={t.id} onClick={() => setTone(t.id)}
-                    className={`px-2 py-1.5 rounded-lg text-[9px] border transition-all ${tone === t.id ? 'bg-indigo-900/40 border-indigo-500 text-indigo-300' : 'bg-gray-900 border-gray-800 text-gray-600 hover:border-gray-700'}`}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-              <select value={genre} onChange={(e) => setGenre(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-[10px] text-gray-300 outline-none">
-                {GENRES.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
-              </select>
-            </div>
-
-            <div className="pt-6 border-t border-gray-900">
-               <HistoryComponent history={history} setFrom={setFrom} setTo={setTo} setHistory={setHistory} />
+            <div className="pt-8 border-t border-white/5">
+              <HistoryComponent history={history} setFrom={setFrom} setTo={setTo} setHistory={setHistory} />
             </div>
           </aside>
         )}
       </main>
 
-      {/* Back-translation Overlay */}
-      {backResult && (
-        <div className="fixed bottom-10 right-10 w-96 bg-gray-950 border border-emerald-900/50 rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
-           <div className="p-4 bg-emerald-950/20 border-b border-emerald-900/30 flex items-center justify-between">
-              <h4 className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Back-Translation Integrity</h4>
-              <button onClick={() => setBackResult('')} className="text-emerald-700 hover:text-emerald-500">✕</button>
-           </div>
-           <div className="p-5 text-[11px] text-emerald-100/80 leading-relaxed max-h-80 overflow-y-auto">
-             {backResult}
-           </div>
-           <div className="px-5 py-3 bg-black/40 text-[9px] text-emerald-900">
-             * 원문과 의미가 일치하는지 한글로 빠르게 확인하세요.
-           </div>
-        </div>
-      )}
-
-      {/* Locked Feature SaaS Modal */}
+      {/* Overlays */}
+      {backResult && <div className="fixed bottom-10 right-10 z-50 w-96 glass-panel p-6 animate-in fade-in slide-in-from-bottom-5"><h4 className="theme-kicker mb-2" style={{ color: '#10b981' }}>Integrity Check</h4><div className="theme-text-primary max-h-60 overflow-y-auto text-xs leading-relaxed">{backResult}</div><button onClick={() => setBackResult('')} className="theme-text-secondary mt-4 text-[9px]">CLOSE</button></div>}
+      
       {lockedFeature && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="bg-gray-950 border border-gray-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-purple-500 to-indigo-500"></div>
-            <button onClick={() => setLockedFeature(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">✕</button>
-            <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-2xl mb-6 mx-auto border border-gray-800">
-              🔒
-            </div>
-            <h2 className="text-xl font-black text-center mb-2 bg-linear-to-r from-gray-100 to-gray-400 bg-clip-text text-transparent">Enterprise Feature</h2>
-            <p className="text-gray-400 text-sm text-center mb-8 px-4 leading-relaxed">
-              <span className="text-purple-400 font-bold block mb-2">{lockedFeature}</span>
-              이 기능은 추후 B2B 기업용 플랜 또는 정식 SaaS 런칭 시 완전 개방될 예정입니다!
-            </p>
-            <button onClick={() => setLockedFeature(null)} className="w-full bg-white text-black font-black text-sm py-4 rounded-xl hover:bg-gray-200 transition-colors">
-              알겠습니다
-            </button>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="max-w-sm w-full glass-panel p-10 text-center relative overflow-hidden">
+             <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-500/20 text-3xl">🔒</div>
+             <h2 className="theme-text-primary text-2xl font-black mb-2">Premium Feature</h2>
+             <p className="theme-text-secondary mb-8 text-sm">{lockedFeature}는 정식 배포 시 공개됩니다.</p>
+             <button onClick={() => setLockedFeature(null)} className="w-full py-4 bg-white text-black font-black rounded-xl hover:bg-gray-200 transition-all">CHECK</button>
           </div>
         </div>
       )}
@@ -1216,23 +1061,19 @@ export default function Home() {
 
 function HistoryComponent({ history, setFrom, setTo, setHistory }: any) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Recent Logs</h3>
-        <button onClick={() => { if(confirm('기록을 지울까요?')) setHistory([]); }} className="text-[9px] text-gray-800 hover:text-red-900">CLEAR</button>
+        <h3 className="theme-kicker">Logs</h3>
+        <button onClick={() => setHistory([])} className="theme-text-secondary text-[9px]">CLEAR</button>
       </div>
-      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">
-        {history.length === 0 && <div className="text-[10px] text-gray-800 py-4 text-center">No logs found.</div>}
+      <div className="space-y-3">
         {history.map((h: any, i: number) => (
-          <div key={i} className="p-2 rounded-xl bg-gray-900/30 border border-gray-900/50 hover:border-gray-800 transition-all cursor-pointer group"
-            onClick={() => { setFrom(h.from); setTo(h.to); alert('언어 설정 복구됨'); }}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[8px] text-gray-700 font-mono">{new Date(h.time).toLocaleTimeString()}</span>
-              <span className="text-[8px] px-1 bg-gray-900 rounded">{h.from}→{h.to}</span>
-            </div>
-            <p className="text-[10px] text-gray-500 truncate">{h.source}...</p>
+          <div key={i} className="p-4 glass-panel rounded-xl cursor-pointer group hover:border-purple-500/30 transition-all" onClick={() => { setFrom(h.from); setTo(h.to); }}>
+             <div className="theme-text-secondary mb-2 flex justify-between text-[8px]"><span>{new Date(h.time).toLocaleTimeString()}</span><span>{h.from}→{h.to}</span></div>
+             <p className="theme-text-primary truncate text-[10px]">{h.source}</p>
           </div>
         ))}
+        {history.length === 0 && <p className="theme-text-secondary py-4 text-center text-[10px] italic">최근 기록이 없습니다.</p>}
       </div>
     </div>
   );

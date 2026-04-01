@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#1b1b20",
+              "secondary-container": "#602b9d",
+              "primary-fixed-dim": "#cabeff",
+              "outline-variant": "#48454e",
+              "tertiary-container": "#101212",
+              "surface-bright": "#39383e",
+              "outline": "#938f98",
+              "primary-fixed": "#e6deff",
+              "on-secondary": "#460283",
+              "secondary-fixed": "#eedbff",
+              "on-tertiary-fixed": "#1a1c1c",
+              "secondary": "#dab9ff",
+              "surface-container-highest": "#35343a",
+              "background": "#131318",
+              "surface-variant": "#35343a",
+              "on-secondary-fixed": "#2a0053",
+              "on-primary-container": "#7f62ff",
+              "surface-container-lowest": "#0e0e13",
+              "primary-container": "#110046",
+              "surface-dim": "#131318",
+              "on-tertiary-fixed-variant": "#454747",
+              "on-surface-variant": "#c9c5ce",
+              "surface-tint": "#cabeff",
+              "secondary-fixed-dim": "#dab9ff",
+              "primary": "#cabeff",
+              "on-primary-fixed-variant": "#4717ca",
+              "inverse-primary": "#603de2",
+              "error": "#ffb4ab",
+              "on-secondary-fixed-variant": "#5e289b",
+              "inverse-surface": "#e4e1e9",
+              "surface": "#131318",
+              "on-surface": "#e4e1e9",
+              "error-container": "#93000a",
+              "on-tertiary": "#2f3131",
+              "on-error-container": "#ffdad6",
+              "tertiary-fixed-dim": "#c6c6c7",
+              "on-background": "#e4e1e9",
+              "inverse-on-surface": "#303036",
+              "on-primary": "#31009a",
+              "tertiary": "#c6c6c7",
+              "on-primary-fixed": "#1c0062",
+              "on-tertiary-container": "#7c7d7d",
+              "on-secondary-container": "#cfa7ff",
+              "tertiary-fixed": "#e2e2e2",
+              "surface-container-high": "#2a292f",
+              "surface-container": "#1f1f25",
+              "on-error": "#690005"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #131318;
+            color: #e4e1e9;
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden;
+        }
+        .celestial-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #1a142e 0%, #131318 100%);
+        }
+        .nebula-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(202, 190, 255, 0.08) 0%, rgba(202, 190, 255, 0) 70%);
+            filter: blur(80px);
+            pointer-events: none;
+        }
+        .ghost-border {
+            border: 1px solid rgba(72, 69, 78, 0.15);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .node-glow {
+            box-shadow: 0 0 15px rgba(218, 185, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary/30">
+<div class="celestial-bg">
+<div class="nebula-glow top-[-10%] left-[-10%]"></div>
+<div class="nebula-glow bottom-[-20%] right-[-5%]"></div>
+</div>
+<!-- TopNavBar -->
+<nav class="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl rounded-full bg-[#131318]/60 backdrop-blur-3xl border border-[#cabeff]/15 shadow-[0_20px_40px_rgba(19,19,24,0.4)] inner-shadow-[0_2px_4px_rgba(228,225,233,0.04)] z-[100] flex justify-between items-center px-8 py-3">
+<div class="text-2xl font-black tracking-tighter text-[#cabeff] drop-shadow-[0_0_8px_rgba(202,190,255,0.4)] font-['Manrope'] uppercase">
+            NTE
+        </div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-[#cabeff] border-b-2 border-[#cabeff] pb-1 font-bold font-['Manrope'] tracking-tight text-sm uppercase transition-all duration-300" href="#">Nexus</a>
+<a class="text-[#cabeff]/60 font-medium hover:text-[#cabeff] font-['Manrope'] tracking-tight text-sm uppercase transition-all duration-300 hover:-translate-y-0.5" href="#">Engines</a>
+<a class="text-[#cabeff]/60 font-medium hover:text-[#cabeff] font-['Manrope'] tracking-tight text-sm uppercase transition-all duration-300 hover:-translate-y-0.5" href="#">Cortex</a>
+<a class="text-[#cabeff]/60 font-medium hover:text-[#cabeff] font-['Manrope'] tracking-tight text-sm uppercase transition-all duration-300 hover:-translate-y-0.5" href="#">Archive</a>
+</div>
+<div class="flex items-center space-x-4">
+<button class="p-2 text-[#cabeff]/60 hover:text-[#cabeff] transition-all duration-300 hover:scale-110">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+<button class="p-2 text-[#cabeff]/60 hover:text-[#cabeff] transition-all duration-300 hover:scale-110">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</nav>
+<main class="relative pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto">
+<!-- Hero Section -->
+<section class="relative min-h-[819px] flex flex-col items-center justify-center text-center space-y-12">
+<div class="space-y-4">
+<div class="inline-flex items-center px-4 py-1.5 rounded-full bg-surface-container-high/40 backdrop-blur-md ghost-border text-primary text-xs font-bold tracking-[0.2em] uppercase">
+                    Aetheris Glass Protocol v4.0
+                </div>
+<h1 class="text-6xl md:text-8xl font-extrabold tracking-tighter leading-tight bg-gradient-to-b from-white to-primary-fixed-dim bg-clip-text text-transparent">
+                    Translate the Soul
+                </h1>
+<p class="max-w-2xl mx-auto text-lg md:text-xl text-on-surface-variant/80 font-light leading-relaxed">
+                    Beyond syntax and structure. NTE parses intent, emotion, and cultural resonance through the Celestial Prism.
+                </p>
+</div>
+<div class="flex flex-col sm:flex-row gap-6 items-center">
+<button class="px-10 py-4 bg-gradient-to-r from-primary to-secondary rounded-full text-on-primary font-bold text-lg shadow-[0_0_30px_rgba(202,190,255,0.3)] hover:scale-105 transition-transform duration-300">
+                    Initialize Engine
+                </button>
+<button class="px-10 py-4 bg-surface-container-highest/40 backdrop-blur-xl ghost-border rounded-full text-on-surface font-semibold text-lg hover:bg-surface-container-highest/60 transition-all duration-300">
+                    View Archive
+                </button>
+</div>
+<!-- Anti-Gravity Floating Element -->
+<div class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl opacity-40">
+<img class="w-full h-auto rounded-[3rem] shadow-2xl" data-alt="Abstract ethereal 3D render of floating crystalline shards with soft violet and indigo light refractions in a dark void" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHGBYQY7JB-uHQ9Pq738IBFNVVWRSYHfyIMMfrGt2iTPdhdvoAduGgf7oc8LmapSsBdq7RMD99sB_5j-0E8VLh8HyyAy8LSJotkDmw6rdQJFBbvtd9yNAU5YcU15BHtdkJYy3EAKxNlSKPtyDRdsHaEAct2SrJYpH59xPt2tQ6zSpNQDsH34VHX4De6ZNxULcMqk2jVZ9__vr4FAPZ9dEmst_mN727q17OAbX97gBfM4tEbF2iskRd82t9Hkyrc2ZZgYgSLLBig1s"/>
+</div>
+</section>
+<!-- Tri-Source Engine Comparison -->
+<section class="py-24 space-y-16">
+<div class="text-center space-y-4">
+<h2 class="text-4xl font-bold tracking-tight">The Engine Triage</h2>
+<p class="text-on-surface-variant">Multi-dimensional comparison of translation resonance</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Drafting Engine -->
+<div class="group relative p-8 rounded-3xl bg-surface-container-low/40 backdrop-blur-xl ghost-border hover:-translate-y-2 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(19,19,24,0.6)]">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary">edit_note</span>
+</div>
+<h3 class="text-xl font-bold mb-3 uppercase tracking-wider text-primary">Drafting</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-8">Raw conceptual extraction. Captures the skeleton of thought with sub-millisecond latency.</p>
+<div class="space-y-4">
+<div class="flex justify-between items-center text-xs uppercase tracking-widest text-on-surface-variant/60">
+<span>Precision</span>
+<span class="text-primary">82%</span>
+</div>
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[82%]"></div>
+</div>
+</div>
+</div>
+<!-- Cortex Engine (Featured) -->
+<div class="group relative p-8 rounded-3xl bg-surface-container-high/60 backdrop-blur-2xl border border-primary/30 -translate-y-4 shadow-[0_40px_80px_rgba(19,19,24,0.6)]">
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-primary text-on-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Recommended</div>
+<div class="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<h3 class="text-xl font-bold mb-3 uppercase tracking-wider text-secondary">Cortex</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-8">Deep semantic mapping. Utilizes neural resonance to preserve emotional subtext across languages.</p>
+<div class="space-y-4">
+<div class="flex justify-between items-center text-xs uppercase tracking-widest text-on-surface-variant/60">
+<span>Precision</span>
+<span class="text-secondary">99.4%</span>
+</div>
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[99.4%] shadow-[0_0_8px_rgba(218,185,255,0.6)]"></div>
+</div>
+</div>
+</div>
+<!-- Simulation Engine -->
+<div class="group relative p-8 rounded-3xl bg-surface-container-low/40 backdrop-blur-xl ghost-border hover:-translate-y-2 transition-all duration-500 hover:shadow-[0_20px_40px_rgba(19,19,24,0.6)]">
+<div class="w-12 h-12 rounded-xl bg-on-surface-variant/10 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-on-surface-variant">hub</span>
+</div>
+<h3 class="text-xl font-bold mb-3 uppercase tracking-wider text-on-surface">Simulation</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-8">Cultural context testing. Projects translation into multiple social scenarios for verification.</p>
+<div class="space-y-4">
+<div class="flex justify-between items-center text-xs uppercase tracking-widest text-on-surface-variant/60">
+<span>Precision</span>
+<span class="text-on-surface">91%</span>
+</div>
+<div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-on-surface/40 w-[91%]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Cards -->
+<section class="py-24 space-y-16">
+<div class="max-w-2xl mx-auto text-center space-y-6">
+<h2 class="text-4xl md:text-5xl font-black tracking-tight uppercase">Tier Selection</h2>
+<p class="text-on-surface-variant">The soul has no price, but the processing power does.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+<!-- Pro Card -->
+<div class="relative group p-12 rounded-[2.5rem] bg-surface-container-low/30 backdrop-blur-3xl ghost-border flex flex-col justify-between overflow-hidden">
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-[80px]"></div>
+<div class="space-y-8 relative z-10">
+<div>
+<span class="text-xs font-bold tracking-[0.3em] uppercase text-primary/60">Creative Elite</span>
+<h3 class="text-4xl font-black mt-2">PRO</h3>
+</div>
+<div class="text-5xl font-light">$129<span class="text-lg text-on-surface-variant">/mo</span></div>
+<ul class="space-y-4">
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+<span>10M tokens / cycle</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+<span>Cortex Engine access</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+<span>3 Parallel Node threads</span>
+</li>
+</ul>
+</div>
+<button class="mt-12 w-full py-4 rounded-2xl bg-surface-container-highest/60 ghost-border font-bold uppercase tracking-widest hover:bg-primary hover:text-on-primary transition-all duration-300">
+                        Select Pro
+                    </button>
+</div>
+<!-- Enterprise Card -->
+<div class="relative group p-12 rounded-[2.5rem] bg-surface-container-high/40 backdrop-blur-3xl border border-secondary/20 flex flex-col justify-between overflow-hidden shadow-[0_40px_80px_rgba(19,19,24,0.4)]">
+<div class="absolute -right-20 -bottom-20 w-80 h-80 bg-secondary/10 rounded-full blur-[100px]"></div>
+<div class="space-y-8 relative z-10">
+<div>
+<span class="text-xs font-bold tracking-[0.3em] uppercase text-secondary">Global Sovereign</span>
+<h3 class="text-4xl font-black mt-2 text-secondary">ENTERPRISE</h3>
+</div>
+<div class="text-5xl font-light">Custom</div>
+<ul class="space-y-4">
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>Unlimited Token Stream</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>Dedicated Prism instance</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>Quantum-Ready Security</span>
+</li>
+<li class="flex items-center space-x-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-sm">check_circle</span>
+<span>24/7 Core Diagnostics</span>
+</li>
+</ul>
+</div>
+<button class="mt-12 w-full py-4 rounded-2xl bg-gradient-to-r from-secondary to-primary text-on-primary font-black uppercase tracking-widest hover:shadow-[0_0_30px_rgba(218,185,255,0.4)] hover:scale-[1.02] transition-all duration-300">
+                        Contact Core
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- SideNavBar (Contextual Triggered) -->
+<aside class="fixed left-4 top-24 bottom-4 w-16 hover:w-64 group bg-[#131318]/40 backdrop-blur-2xl rounded-3xl border border-[#cabeff]/10 shadow-[40px_0_80px_rgba(19,19,24,0.2)] flex flex-col p-4 z-[90] transition-all duration-500 overflow-hidden">
+<div class="flex items-center space-x-4 mb-10 overflow-hidden">
+<div class="w-8 h-8 rounded-full bg-primary-container flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-primary">auto_awesome</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+<div class="text-sm font-bold text-[#cabeff]">Project Alpha</div>
+<div class="text-[10px] text-[#cabeff]/40 uppercase tracking-widest">Celestial Prism</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col space-y-4">
+<a class="flex items-center space-x-4 p-3 bg-[#cabeff]/10 text-[#cabeff] rounded-xl border-l-4 border-[#cabeff] group/item transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">edit_note</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-bold uppercase tracking-widest">Drafting</span>
+</a>
+<a class="flex items-center space-x-4 p-3 text-[#cabeff]/40 hover:bg-[#cabeff]/5 hover:text-[#cabeff]/80 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">translate</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-bold uppercase tracking-widest">Linguistics</span>
+</a>
+<a class="flex items-center space-x-4 p-3 text-[#cabeff]/40 hover:bg-[#cabeff]/5 hover:text-[#cabeff]/80 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">hub</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-bold uppercase tracking-widest">Nodes</span>
+</a>
+<a class="flex items-center space-x-4 p-3 text-[#cabeff]/40 hover:bg-[#cabeff]/5 hover:text-[#cabeff]/80 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">auto_awesome</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-bold uppercase tracking-widest">Simulation</span>
+</a>
+<a class="flex items-center space-x-4 p-3 text-[#cabeff]/40 hover:bg-[#cabeff]/5 hover:text-[#cabeff]/80 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">publish</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm font-bold uppercase tracking-widest">Export</span>
+</a>
+</div>
+<div class="mt-auto space-y-4 border-t border-[#cabeff]/10 pt-6">
+<a class="flex items-center space-x-4 p-3 text-[#cabeff]/40 hover:text-[#cabeff]/80 transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">analytics</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm uppercase tracking-widest">Diagnostics</span>
+</a>
+<a class="flex items-center space-x-4 p-3 text-[#cabeff]/40 hover:text-[#cabeff]/80 transition-all" href="#">
+<span class="material-symbols-outlined flex-shrink-0">terminal</span>
+<span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm uppercase tracking-widest">Terminal</span>
+</a>
+</div>
+</aside>
+<!-- Footer -->
+<footer class="py-12 border-t border-[#cabeff]/5 bg-surface-container-lowest/80 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="text-lg font-black tracking-tighter text-[#cabeff]/40 uppercase">
+                Narrative Translation Engine
+            </div>
+<div class="flex space-x-8 text-xs font-bold uppercase tracking-[0.2em] text-on-surface-variant/60">
+<a class="hover:text-primary transition-colors" href="#">Privacy Protocol</a>
+<a class="hover:text-primary transition-colors" href="#">Core Systems</a>
+<a class="hover:text-primary transition-colors" href="#">Neural Policy</a>
+</div>
+<div class="text-xs text-on-surface-variant/40 font-mono">
+                © 2024 NTE.CORE // ALL THOUGHTS RESERVED.
+            </div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NTE | AI Translation Editor</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#b2c5ff",
+              "primary": "#003d9b",
+              "surface-dim": "#d8dadc",
+              "primary-fixed": "#dae2ff",
+              "secondary": "#4c5d8d",
+              "inverse-on-surface": "#eff1f3",
+              "inverse-primary": "#b2c5ff",
+              "on-secondary": "#ffffff",
+              "on-surface-variant": "#434654",
+              "on-primary-fixed-variant": "#0040a2",
+              "surface-container": "#eceef0",
+              "on-secondary-fixed-variant": "#344573",
+              "on-tertiary-fixed-variant": "#812800",
+              "error-container": "#ffdad6",
+              "surface-variant": "#e0e3e5",
+              "tertiary": "#7b2600",
+              "on-tertiary-container": "#ffc6b2",
+              "outline": "#737685",
+              "error": "#ba1a1a",
+              "on-error": "#ffffff",
+              "on-secondary-container": "#415382",
+              "outline-variant": "#c3c6d6",
+              "on-tertiary-fixed": "#380d00",
+              "on-secondary-fixed": "#021945",
+              "surface": "#f7f9fb",
+              "surface-container-lowest": "#ffffff",
+              "inverse-surface": "#2d3133",
+              "tertiary-fixed": "#ffdbcf",
+              "tertiary-fixed-dim": "#ffb59b",
+              "primary-container": "#0052cc",
+              "secondary-container": "#b6c8fe",
+              "surface-bright": "#f7f9fb",
+              "on-surface": "#191c1e",
+              "on-background": "#191c1e",
+              "on-primary-fixed": "#001848",
+              "tertiary-container": "#a33500",
+              "on-tertiary": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface-tint": "#0c56d0",
+              "secondary-fixed": "#dae2ff",
+              "secondary-fixed-dim": "#b4c5fb",
+              "on-primary-container": "#c4d2ff",
+              "surface-container-low": "#f2f4f6",
+              "surface-container-high": "#e6e8ea",
+              "surface-container-highest": "#e0e3e5",
+              "background": "#f7f9fb",
+              "on-primary": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .active-glow {
+        box-shadow: 0 0 20px rgba(0, 61, 155, 0.08);
+      }
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #e0e3e5;
+        border-radius: 10px;
+      }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-hidden">
+<!-- TopNavBar Implementation -->
+<nav class="fixed top-0 w-full z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-[0_12px_40px_rgba(0,61,155,0.06)]">
+<div class="flex justify-between items-center px-8 py-4 max-w-[1440px] mx-auto font-['Manrope'] text-sm tracking-tight">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-bold tracking-tighter text-slate-900 dark:text-slate-50">NTE</span>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-blue-700 dark:text-blue-400 font-semibold border-b-2 border-blue-700 pb-1" href="#">Engines</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 transition-colors" href="#">Archive</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-slate-900 transition-colors" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined text-outline text-lg">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs w-48 font-medium" placeholder="Search strings..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-slate-100/50 transition-colors rounded-full relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white"></span>
+</button>
+<button class="p-2 hover:bg-slate-100/50 transition-colors rounded-full">
+<span class="material-symbols-outlined text-on-surface-variant">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-outline-variant/30">
+<img alt="User profile" data-alt="professional modern user profile avatar with minimalist soft focus background and soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU50R4oIVAh7AVlW1tvoUA6EkIg0jUEWb7ZU6OyYigAK3rMjBakVlNk-O71zEBh9hjmzPPCasoXKY-N2LdRJGlef2TNTRJTwc65HNyBOUAb9sNmuuEoLOZSCrLFN-FQ33c6mdt-rte2wGrAWzR_kl7pzUOsy9VMh4SMAYqF6Th3uG7ATuw_JJ1qnHtWM_5dlrYTMelS9gT6_mRBBZaFGTTBhC8LFuSbi7vzFJ0D5x-B1BucsSl-QJOMrRkl9S1H2N0Ia1v6ZEadsw"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<!-- SideNavBar Implementation -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-lg flex flex-col gap-6 p-6 border-r border-slate-200/10 font-['Manrope'] font-medium antialiased mt-16">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 bg-primary-container rounded-xl flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div>
+<div class="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-wider">Project Alpha</div>
+<div class="text-[10px] text-slate-500">Active Workspace</div>
+</div>
+</div>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:translate-x-1 transition-transform duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:translate-x-1 transition-transform duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">archive</span>
+<span>Archive</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-blue-700 dark:text-blue-400 bg-white dark:bg-slate-900 rounded-xl shadow-sm" href="#">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span>Engines</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:translate-x-1 transition-transform duration-300 rounded-xl" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Analytics</span>
+</a>
+</div>
+<div class="mt-auto pt-6">
+<div class="bg-surface-container-high/50 rounded-2xl p-4">
+<div class="text-[10px] font-bold text-outline uppercase tracking-widest mb-2">Narrative Context</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-xs">
+<span class="text-on-surface-variant">Character: Elara</span>
+<span class="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">Active</span>
+</div>
+<div class="flex items-center justify-between text-xs">
+<span class="text-on-surface-variant">Tone: Cyberpunk</span>
+<span class="material-symbols-outlined text-xs">verified</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 pt-20 h-screen flex flex-col">
+<!-- Editor Header: Context & Stats -->
+<header class="px-8 py-6 flex justify-between items-end">
+<div>
+<div class="flex items-center gap-2 text-xs font-bold text-primary mb-1 uppercase tracking-widest">
+<span class="material-symbols-outlined text-sm">edit_note</span>
+          Live Session: Episode 04 - "The Glitch"
+        </div>
+<h1 class="text-4xl font-extrabold tracking-tight text-on-surface">AI Translation Editor</h1>
+</div>
+<div class="flex gap-4">
+<div class="text-right">
+<div class="text-[10px] uppercase tracking-widest text-outline mb-1 font-bold">Session Confidence</div>
+<div class="flex items-center gap-2">
+<div class="w-32 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-4/5 h-full bg-gradient-to-r from-primary to-primary-container"></div>
+</div>
+<span class="text-sm font-bold">92%</span>
+</div>
+</div>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-2 rounded-xl text-sm font-semibold shadow-[0_8px_20px_rgba(0,61,155,0.15)] hover:scale-95 transition-transform">
+          Finalize &amp; Push
+        </button>
+</div>
+</header>
+<!-- Editor Workspace Grid -->
+<div class="flex-1 px-8 pb-8 overflow-hidden">
+<div class="grid grid-cols-12 gap-8 h-full">
+<!-- Left: Source & Narrative Panel -->
+<div class="col-span-3 flex flex-col gap-6 overflow-y-auto">
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-sm text-primary">menu_book</span>
+              Source Narrative
+            </h3>
+<p class="text-sm leading-relaxed text-on-surface-variant font-medium">
+              "The sky above the port was the color of television, tuned to a dead channel."
+            </p>
+<div class="mt-4 pt-4 border-t border-surface-container flex gap-2">
+<span class="px-2 py-1 bg-surface-container-high rounded-lg text-[10px] font-bold text-outline">EN-US</span>
+<span class="px-2 py-1 bg-surface-container-high rounded-lg text-[10px] font-bold text-outline">Fiction</span>
+</div>
+</section>
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 flex-1">
+<h3 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2 text-on-surface">
+<span class="material-symbols-outlined text-sm text-tertiary">history_edu</span>
+              Style Guide
+            </h3>
+<ul class="space-y-4">
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<div>
+<div class="text-xs font-bold text-on-surface">Noir Atmosphere</div>
+<div class="text-[11px] text-on-surface-variant">Prioritize atmospheric descriptions over literal translations.</div>
+</div>
+</li>
+<li class="flex gap-3">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<div>
+<div class="text-xs font-bold text-on-surface">Technical Jargon</div>
+<div class="text-[11px] text-on-surface-variant">Retain original English terms for tech hardware.</div>
+</div>
+</li>
+</ul>
+</section>
+</div>
+<!-- Center: Multi-Source Editor Panel (The Glass Layer) -->
+<div class="col-span-6 flex flex-col gap-6">
+<div class="glass-panel rounded-[2rem] p-8 h-full shadow-2xl border border-white/50 flex flex-col relative overflow-hidden">
+<!-- Decorative Gradient Blobs -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-[80px]"></div>
+<div class="absolute -bottom-24 -left-24 w-64 h-64 bg-tertiary/5 rounded-full blur-[80px]"></div>
+<div class="flex justify-between items-center mb-8 relative z-10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined p-2 bg-primary/10 text-primary rounded-xl" style="font-variation-settings: 'FILL' 1;">translate</span>
+<h2 class="text-xl font-bold tracking-tight">Active Translation</h2>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-low p-1 rounded-full">
+<button class="px-4 py-1 text-[10px] font-bold bg-white shadow-sm rounded-full text-primary">GPT-4</button>
+<button class="px-4 py-1 text-[10px] font-bold text-outline hover:text-on-surface">DeepL</button>
+<button class="px-4 py-1 text-[10px] font-bold text-outline hover:text-on-surface">Google</button>
+</div>
+</div>
+<div class="flex-1 relative z-10">
+<textarea class="w-full h-full bg-transparent border-none focus:ring-0 text-lg font-medium leading-relaxed resize-none text-on-surface placeholder:text-outline/30" placeholder="Begin translating here...">"El cielo sobre el puerto tenía el color de un televisor sintonizado en un canal muerto."</textarea>
+</div>
+<div class="pt-6 border-t border-outline-variant/10 flex items-center justify-between relative z-10">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 bg-green-500 rounded-full"></span>
+<span class="text-xs font-bold text-on-surface-variant">Auto-Save Active</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-outline">speed</span>
+<span class="text-xs font-bold text-on-surface-variant">324 Words/Min</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-primary">magic_button</span>
+</button>
+<button class="p-2 bg-surface-container-high rounded-lg hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-primary">history</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Collaboration & Engine Suggestions -->
+<div class="col-span-3 flex flex-col gap-6 overflow-y-auto">
+<!-- Engine Comparison Card -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h3 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center justify-between">
+<span>Suggestions</span>
+<span class="text-[10px] text-primary">Compare All</span>
+</h3>
+<div class="space-y-4">
+<div class="p-3 bg-surface rounded-lg border-l-2 border-primary">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-black text-primary">GPT-4 (v3.2)</span>
+<span class="text-[10px] font-bold text-on-surface-variant">98% Match</span>
+</div>
+<p class="text-xs font-medium text-on-surface leading-snug">"El cielo sobre el puerto era del color de un televisor..."</p>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg opacity-60">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-black text-outline">DeepL Pro</span>
+<span class="text-[10px] font-bold text-on-surface-variant">84% Match</span>
+</div>
+<p class="text-xs font-medium text-on-surface leading-snug">"El cielo por encima del puerto tenía el tono de una televisión..."</p>
+</div>
+</div>
+</section>
+<!-- Collaboration Feed -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10 flex-1 flex flex-col">
+<h3 class="text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-secondary">forum</span>
+              Collaboration
+            </h3>
+<div class="flex-1 space-y-6 overflow-y-auto pr-2">
+<div class="space-y-2">
+<div class="flex items-center gap-2">
+<img alt="Collaborator" class="w-5 h-5 rounded-full" data-alt="creative director woman with glasses professional and approachable look" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGKbmFlsiMYbRjS78XYBZHdzMtiD_zR4DDErjirUg5vcmkSfAPqCnyvAZluveHi0CyU0ZXnHdUVwSRvvLYth6Uz3GhSxz5dWvzuQVhmT6H3h9yzjW6ICelKfcY0y3aBJYzEWdZ1wN0dG-200pNTcSc0u931CyUtfI9KqCyzRgeR8ZNf_nmsvGqDlIWISPcRed_TtGIuqWEnYfU_ufklyGWsMfaA6qqiYFzB5rK2LboXNqFmgw0eOW5Vz20Y6M0yPoH-jdAkbEB33w"/>
+<span class="text-[10px] font-bold">Sarah M.</span>
+<span class="text-[9px] text-outline">2m ago</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-tr-xl rounded-br-xl rounded-bl-xl text-xs text-on-surface-variant leading-relaxed">
+                  Should we use "sintonizado" or "ajustado" here? The vibe needs to feel more analog.
+                </div>
+<div class="ml-6 border-l-2 border-surface-container pl-4 pt-2">
+<div class="flex items-center gap-2 mb-1">
+<img alt="AI Agent" class="w-5 h-5 rounded-full" data-alt="abstract geometric ai profile icon with soft blue intelligent glow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUwbMsX-osWkNL8r7VlTXxB4fyA9NM6mSg0p4OsUzFWLf8zbo41Clar44E7lb8LDCxDFTGluGcxXwC67UaJtd_YZbDRUBd1nraWymH6waBn9YpuRUqMiFOZuEOGBuHjuFmWykszbVRQ2m8-2jndzPxciXAskE9Y4S-0zzZJQY6NF6DlOjWulwtGmmoKboq-hcoG-Yuvk5It7K1-FFl2D4Z2pm_AVkTuTCrx280IuAtfu6xP6pQ17a8BAQXFjD7a5nK0-1kn-SFzao"/>
+<span class="text-[10px] font-bold text-primary">NTE AI</span>
+<span class="text-[9px] text-outline">Just now</span>
+</div>
+<div class="text-[11px] text-on-surface-variant italic">
+                    "Sintonizado" maintains the broadcast metaphor better for this specific chapter.
+                  </div>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-surface-container relative">
+<input class="w-full bg-surface-container-high/50 border-none rounded-xl px-4 py-2 text-xs focus:ring-1 focus:ring-primary/20" placeholder="Add a comment..." type="text"/>
+<button class="absolute right-2 bottom-2 p-1 text-primary">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer (Suppressed on main workspace per guidelines but included for completeness if needed) -->
+<footer class="w-full py-12 bg-white dark:bg-slate-950 flex flex-col md:flex-row justify-between items-center px-12 max-w-7xl mx-auto opacity-70 font-['Manrope'] text-xs uppercase tracking-widest">
+<span class="text-slate-400 dark:text-slate-600">© 2024 Narrative Translation Engine</span>
+<div class="flex gap-8 mt-4 md:mt-0">
+<a class="text-slate-400 dark:text-slate-600 hover:text-blue-600 transition-colors" href="#">Privacy Policy</a>
+<a class="text-slate-400 dark:text-slate-600 hover:text-blue-600 transition-colors" href="#">Terms of Service</a>
+<a class="text-slate-400 dark:text-slate-600 hover:text-blue-600 transition-colors" href="#">Support</a>
+</div>
+</footer>
+</body></html>
