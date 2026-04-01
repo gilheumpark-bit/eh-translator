@@ -3,6 +3,7 @@
 import { ChangeEvent, startTransition, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { NetworkBridgePanel } from '@/components/translator/NetworkBridgePanel';
+import { EnvStatusBar } from '@/components/translator/EnvStatusBar';
 import {
   loadProjectFromCloud,
   saveProjectToCloud,
@@ -1371,6 +1372,7 @@ export default function Home() {
           {!isZenMode && (
             <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.75fr)_minmax(240px,0.8fr)]">
               <div className="workspace-hero glass-panel rounded-4xl p-6">
+                <EnvStatusBar />
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0">
                     <div className="theme-kicker">Premium Narrative Workspace</div>
