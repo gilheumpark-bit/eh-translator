@@ -14,8 +14,29 @@ const DEFAULT_MODELS: Record<string, string> = {
   mistral: 'mistral-large-latest',
 };
 
+const ALLOWED_PROVIDERS = new Set(Object.keys(DEFAULT_MODELS));
+
 function buildPrompt(params: any) {
-  const { text, from, to, tone, genre, context, glossary, characterProfiles, episodeContext, storySummary, sourceText, stage, mode = 'novel' } = params;
+  const { text, from, to, tone, genre, context, glossary, characterProfiles, continuityNotes, episodeContext, storySummary, sourceText, stage, mode = 'novel' } = params;
+
+  if (stage === 10) {
+    return `[SYSTEM: STORY BIBLE SUMMARIZER]
+You are updating the running Story Bible for a serialized novel translation workspace.
+<strict_directives>
+1. Output ONLY concise bullet points.
+2. Focus on newly introduced facts, character shifts, relationship movement, locations, powers, factions, promises, clues, and unresolved hooks.
+3. Do NOT repeat unchanged background unless the chapter meaningfully updates it.
+4. Preserve names, titles, spellings, and terminology exactly as they appear in the chapter text.
+</strict_directives>
+${storySummary ? `[Current Story Bible]:\n${storySummary}\n` : ''}
+${characterProfiles ? `[Character Profiles]:\n${characterProfiles}\n` : ''}
+${context ? `[World Lore]:\n${context}\n` : ''}
+${continuityNotes ? `[Cross Project Continuity Notes]:\n${continuityNotes}\n` : ''}
+<chapter_text>
+${text}
+</chapter_text>
+Output ONLY the summary points.`;
+  }
 
   let baseInstructions = `[SYSTEM: DETERMINISTIC TRANSLATION ENGINE — MODE: ${mode === 'general' ? 'GENERAL ACCURACY' : 'NOVEL SPECIALIST'}]
 You are a highly constrained, professional translation engine converting text from ${from} to ${to}.
@@ -31,13 +52,14 @@ ${mode === 'general'
   if (glossary) baseInstructions += `[Glossary]:\n${glossary}\n`;
   if (characterProfiles) baseInstructions += `[Character Profiles]:\n${characterProfiles}\n`;
   if (storySummary) baseInstructions += `[Previous Story Summary]:\n${storySummary}\n`;
+  if (continuityNotes) baseInstructions += `[Cross Project Continuity Notes]:\n${continuityNotes}\n`;
   if (episodeContext) {
     baseInstructions += `
-CRITICAL INSTRUCTION: The following is the PREVIOUS CHAPTER'S TRANSLATION.
-Use it ONLY for lore, character tone, and continuity. DO NOT translate this or include it in your output.
-<previous_chapter_do_not_translate_this>
+CRITICAL INSTRUCTION: The following excerpts are PREVIOUS TRANSLATED CHAPTERS or approved continuity references.
+Use them ONLY for lore, pacing, callbacks, and character tone consistency. DO NOT translate this or include it in your output.
+<continuity_reference_do_not_translate_this>
 ${episodeContext}
-</previous_chapter_do_not_translate_this>
+</continuity_reference_do_not_translate_this>
 `;
   }
   if (context) baseInstructions += `Additional Context:\n${context}\n`;
@@ -102,14 +124,6 @@ ${sourceText}
 ${text}
 </current_draft>
 Output ONLY the final polished draft. Never add commentary.`;
-  } else if (stage === 10) {
-    prompt = `${baseInstructions}
-MISSION: Story Summarizer.
-Extract a concise summary of the key events and new elements introduced in this chapter to append to the Story Bible. Focus on characters, locations, and major plot developments.
-<chapter_text>
-${text}
-</chapter_text>
-Output ONLY the summary points.`;
   } else {
     prompt = `${baseInstructions}
 Analyze the text or translate directly depending on the prompt:
@@ -126,11 +140,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { provider = 'gemini', apiKey, model, stage = 0, mode = 'novel' } = body;
 
+    if (!ALLOWED_PROVIDERS.has(provider)) {
+      return NextResponse.json({ error: '지원하지 않는 번역 엔진입니다.' }, { status: 400 });
+    }
+
     const finalModel = model || DEFAULT_MODELS[provider] || 'gemini-2.5-flash';
     const finalApiKey = apiKey || process.env[`${provider.toUpperCase()}_API_KEY`] || '';
 
     if (!finalApiKey && !process.env[`${provider.toUpperCase()}_API_KEY`]) {
-      return NextResponse.json({ error: `API Key missing for ${provider}` }, { status: 400 });
+      return NextResponse.json({ error: '선택한 번역 엔진의 API 키가 설정되지 않았습니다.' }, { status: 400 });
     }
 
     let aiModel;
@@ -140,7 +158,7 @@ export async function POST(req: NextRequest) {
       case 'claude': aiModel = createAnthropic({ apiKey: finalApiKey })(finalModel); break;
       case 'deepseek': aiModel = createDeepSeek({ apiKey: finalApiKey })(finalModel); break;
       case 'mistral': aiModel = createMistral({ apiKey: finalApiKey })(finalModel); break;
-      default: return NextResponse.json({ error: `Unknown provider: ${provider}` }, { status: 400 });
+      default: return NextResponse.json({ error: '지원하지 않는 번역 엔진입니다.' }, { status: 400 });
     }
 
     const prompt = buildPrompt(body);
@@ -169,6 +187,6 @@ export async function POST(req: NextRequest) {
     return resultStream.toTextStreamResponse();
   } catch (err: any) {
     console.error('Translation Error:', err);
-    return NextResponse.json({ error: err.message || 'Translation failed' }, { status: 500 });
+    return NextResponse.json({ error: '번역 처리 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' }, { status: 500 });
   }
 }

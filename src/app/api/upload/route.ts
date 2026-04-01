@@ -4,6 +4,97 @@ import mammoth from 'mammoth';
 export const dynamic = 'force-dynamic';
 // For multipart form body parsing, we do not need body parser false in Next.js App Router.
 
+function normalizeNarrativeText(text: string) {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function splitByHeadings(content: string) {
+  const headingPattern =
+    /^(chapter\s*\d+|chap\.?\s*\d+|episode\s*\d+|ep\.?\s*\d+|prologue|epilogue|interlude|side\s*story|제\s*\d+\s*(화|장)|\d+\s*(화|장)|#\s+.+|##\s+.+)$/i;
+  const sections: { title: string; content: string }[] = [];
+  const lines = normalizeNarrativeText(content).split('\n');
+
+  let currentTitle = '';
+  let currentLines: string[] = [];
+  let sawHeading = false;
+
+  const pushSection = (fallbackTitle?: string) => {
+    const sectionContent = currentLines.join('\n').trim();
+    if (!sectionContent) return;
+
+    sections.push({
+      title: currentTitle || fallbackTitle || `Part ${sections.length + 1}`,
+      content: sectionContent,
+    });
+
+    currentLines = [];
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const isHeading = headingPattern.test(line);
+
+    if (isHeading) {
+      if (currentTitle) {
+        pushSection();
+      }
+
+      currentTitle = line.replace(/^#+\s*/, '').trim() || `Part ${sections.length + 1}`;
+      sawHeading = true;
+      continue;
+    }
+
+    currentLines.push(rawLine);
+  }
+
+  if (!sawHeading) {
+    return [];
+  }
+
+  pushSection(currentTitle || `Part ${sections.length + 1}`);
+  return sections;
+}
+
+function splitByParagraphBlocks(content: string) {
+  const rawChunks = normalizeNarrativeText(content)
+    .split(/\n\s*\n/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+
+  const sections: { title: string; content: string }[] = [];
+  let currentChunk = '';
+  let index = 1;
+
+  for (const paragraph of rawChunks) {
+    if (currentChunk && currentChunk.length + paragraph.length > 4000) {
+      sections.push({ title: `Split Part ${index++}`, content: currentChunk });
+      currentChunk = paragraph;
+      continue;
+    }
+
+    currentChunk += currentChunk ? `\n\n${paragraph}` : paragraph;
+  }
+
+  if (currentChunk) {
+    sections.push({ title: `Split Part ${index}`, content: currentChunk });
+  }
+
+  return sections;
+}
+
+function splitNarrativeContent(content: string) {
+  const headingSections = splitByHeadings(content);
+  if (headingSections.length) {
+    return headingSections;
+  }
+
+  return splitByParagraphBlocks(content);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -69,30 +160,14 @@ export async function POST(req: NextRequest) {
     else if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
       content = buffer.toString('utf-8');
     } else {
-      return NextResponse.json({ error: 'Unsupported file format' }, { status: 400 });
+      return NextResponse.json({ error: '지원하지 않는 문서 형식입니다.' }, { status: 400 });
     }
 
-    // Split content into basic chunks ensuring we DON'T ruin mid-sentence phrasing.
-    // We split purely by double newlines or major paragraph breaks.
-    const rawChunks = content.split(/\n\s*\n/).map(c => c.trim()).filter(c => c.length > 50);
-    // Combine into chunks of roughly 4000 chars to maximize LLM context window while preventing cutoffs.
-    const chapters: { title: string; content: string }[] = [];
-    let currentChunk = '';
-    let chIndex = 1;
-
-    for (const paragraph of rawChunks) {
-      if ((currentChunk.length + paragraph.length) > 4000) {
-        chapters.push({ title: `Split Part ${chIndex++}`, content: currentChunk });
-        currentChunk = paragraph;
-      } else {
-        currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
-      }
-    }
-    if (currentChunk) chapters.push({ title: `Split Part ${chIndex++}`, content: currentChunk });
+    const chapters = splitNarrativeContent(content);
 
     return NextResponse.json({ chapters });
   } catch (err: any) {
     console.error('File parsing error:', err);
-    return NextResponse.json({ error: err.message || 'File parsing failed' }, { status: 500 });
+    return NextResponse.json({ error: '문서 파싱 중 오류가 발생했습니다. 파일 형식을 확인해주세요.' }, { status: 500 });
   }
 }

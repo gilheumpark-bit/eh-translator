@@ -2,6 +2,13 @@
 
 import { ChangeEvent, startTransition, useEffect, useRef, useState } from 'react';
 import { useAuth, UserButton, SignInButton } from '@clerk/nextjs';
+import {
+  loadProjectFromCloud,
+  saveProjectToCloud,
+  listUserProjects,
+  supabaseAnonKey,
+  supabaseUrl,
+} from '@/lib/supabase';
 
 const LANGUAGES = [
   { code: 'ja', label: '日本語 (JAPANESE)' },
@@ -22,6 +29,221 @@ const BACKGROUND_MODES = [
   { id: 'glacial', label: 'GLACIAL (WHITE)', note: '화이트 글래스 - 문서 작업 최적화' }
 ];
 
+const PROJECT_LIBRARY_KEY = 'eh_translator_project_library';
+const MAX_LOCAL_PROJECTS = 18;
+const REFERENCE_PROJECT_LIMIT = 4;
+const REFERENCE_CHAPTER_LIMIT = 3;
+const REFERENCE_TEXT_LIMIT = 12000;
+const STORY_BIBLE_LIMIT = 12000;
+
+type ChapterEntry = {
+  name: string;
+  content: string;
+  result: string;
+  isDone: boolean;
+  stageProgress: number;
+  storyNote?: string;
+  error?: string;
+};
+
+type ProjectSnapshot = {
+  id: string;
+  project_name: string;
+  updated_at: number;
+  chapters: ChapterEntry[];
+  worldContext: string;
+  characterProfiles: string;
+  storySummary: string;
+  from: string;
+  to: string;
+};
+
+type ExportProjectMeta = {
+  id: string;
+  project_name: string;
+  updated_at: number;
+};
+
+function limitText(text: string, max: number) {
+  const normalized = text.trim();
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max).trim()}\n\n[...중략...]`;
+}
+
+function normalizeChapter(raw: any, fallbackName = 'Untitled Part'): ChapterEntry {
+  return {
+    name: typeof raw?.name === 'string' && raw.name.trim() ? raw.name : fallbackName,
+    content: typeof raw?.content === 'string' ? raw.content : '',
+    result: typeof raw?.result === 'string' ? raw.result : '',
+    isDone: Boolean(raw?.isDone),
+    stageProgress: typeof raw?.stageProgress === 'number' ? raw.stageProgress : 0,
+    storyNote: typeof raw?.storyNote === 'string' ? raw.storyNote : '',
+    error: typeof raw?.error === 'string' ? raw.error : '',
+  };
+}
+
+function normalizeProjectSnapshots(value: unknown) {
+  if (!Array.isArray(value)) return [] as ProjectSnapshot[];
+
+  const seen = new Set<string>();
+
+  return value
+    .map((raw: any) => {
+      const id = typeof raw?.id === 'string' && raw.id.trim() ? raw.id : null;
+      if (!id) return null;
+
+      return {
+        id,
+        project_name:
+          typeof raw?.project_name === 'string' && raw.project_name.trim()
+            ? raw.project_name
+            : typeof raw?.projectName === 'string' && raw.projectName.trim()
+              ? raw.projectName
+              : `Project ${id.slice(-4)}`,
+        updated_at: typeof raw?.updated_at === 'number' ? raw.updated_at : Date.now(),
+        chapters: Array.isArray(raw?.chapters)
+          ? raw.chapters.map((chapter: any, index: number) => normalizeChapter(chapter, `Part ${index + 1}`))
+          : [],
+        worldContext: typeof raw?.worldContext === 'string' ? raw.worldContext : '',
+        characterProfiles: typeof raw?.characterProfiles === 'string' ? raw.characterProfiles : '',
+        storySummary: typeof raw?.storySummary === 'string' ? raw.storySummary : '',
+        from: typeof raw?.from === 'string' ? raw.from : 'ja',
+        to: typeof raw?.to === 'string' ? raw.to : 'ko',
+      } satisfies ProjectSnapshot;
+    })
+    .filter((snapshot): snapshot is ProjectSnapshot => Boolean(snapshot))
+    .filter((snapshot) => {
+      if (seen.has(snapshot.id)) return false;
+      seen.add(snapshot.id);
+      return true;
+    })
+    .sort((left, right) => right.updated_at - left.updated_at)
+    .slice(0, MAX_LOCAL_PROJECTS);
+}
+
+function mergeProjectSnapshots(primary: ProjectSnapshot[], secondary: ProjectSnapshot[]) {
+  const merged = new Map<string, ProjectSnapshot>();
+
+  for (const project of secondary) {
+    merged.set(project.id, project);
+  }
+
+  for (const project of primary) {
+    merged.set(project.id, project);
+  }
+
+  return Array.from(merged.values())
+    .sort((left, right) => right.updated_at - left.updated_at)
+    .slice(0, MAX_LOCAL_PROJECTS);
+}
+
+function toProjectMeta(projects: ProjectSnapshot[]): ExportProjectMeta[] {
+  return projects.map((project) => ({
+    id: project.id,
+    project_name: project.project_name,
+    updated_at: project.updated_at,
+  }));
+}
+
+function projectFingerprint(snapshot: Omit<ProjectSnapshot, 'updated_at'>) {
+  return JSON.stringify({
+    id: snapshot.id,
+    project_name: snapshot.project_name,
+    chapters: snapshot.chapters.map((chapter) => ({
+      name: chapter.name,
+      content: chapter.content,
+      result: chapter.result,
+      isDone: chapter.isDone,
+      stageProgress: chapter.stageProgress,
+      storyNote: chapter.storyNote || '',
+      error: chapter.error || '',
+    })),
+    worldContext: snapshot.worldContext,
+    characterProfiles: snapshot.characterProfiles,
+    storySummary: snapshot.storySummary,
+    from: snapshot.from,
+    to: snapshot.to,
+  });
+}
+
+function mergeStoryBible(existing: string, incoming: string) {
+  const nextBlock = incoming.trim();
+  if (!nextBlock) return existing;
+  if (existing.includes(nextBlock)) return limitText(existing, STORY_BIBLE_LIMIT);
+
+  const merged = existing.trim()
+    ? `${existing.trim()}\n\n---\n${nextBlock}`
+    : nextBlock;
+
+  return limitText(merged, STORY_BIBLE_LIMIT);
+}
+
+function buildReferenceBundle(referenceIds: string[], projectList: ProjectSnapshot[], currentProjectId: string) {
+  const selectedProjects = projectList
+    .filter((project) => project.id !== currentProjectId && referenceIds.includes(project.id))
+    .slice(0, REFERENCE_PROJECT_LIMIT);
+
+  if (!selectedProjects.length) {
+    return {
+      context: '',
+      characterProfiles: '',
+      storySummary: '',
+      episodeContext: '',
+      continuityNotes: '',
+      projectNames: [] as string[],
+    };
+  }
+
+  const worldBlocks: string[] = [];
+  const profileBlocks: string[] = [];
+  const summaryBlocks: string[] = [];
+  const episodeBlocks: string[] = [];
+  const noteBlocks: string[] = [];
+
+  for (const project of selectedProjects) {
+    if (project.worldContext.trim()) {
+      worldBlocks.push(`[${project.project_name} · World Lore]\n${project.worldContext.trim()}`);
+    }
+
+    if (project.characterProfiles.trim()) {
+      profileBlocks.push(`[${project.project_name} · Character Voices]\n${project.characterProfiles.trim()}`);
+    }
+
+    if (project.storySummary.trim()) {
+      summaryBlocks.push(`[${project.project_name} · Story Bible]\n${project.storySummary.trim()}`);
+    }
+
+    const recentChapters = project.chapters
+      .filter((chapter) => (chapter.result || chapter.content).trim())
+      .slice(-REFERENCE_CHAPTER_LIMIT);
+
+    for (const chapter of recentChapters) {
+      episodeBlocks.push(
+        `[${project.project_name} / ${chapter.name}]\n${limitText((chapter.result || chapter.content).trim(), 2600)}`
+      );
+    }
+
+    noteBlocks.push(
+      [
+        `[${project.project_name}]`,
+        project.storySummary.trim() && `최근 서사 요약:\n${limitText(project.storySummary.trim(), 1200)}`,
+        project.characterProfiles.trim() && `말투 기준:\n${limitText(project.characterProfiles.trim(), 1000)}`,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+
+  return {
+    context: limitText(worldBlocks.join('\n\n'), 4200),
+    characterProfiles: limitText(profileBlocks.join('\n\n'), 4200),
+    storySummary: limitText(summaryBlocks.join('\n\n'), 5200),
+    episodeContext: limitText(episodeBlocks.join('\n\n---\n\n'), REFERENCE_TEXT_LIMIT),
+    continuityNotes: limitText(noteBlocks.join('\n\n'), 5000),
+    projectNames: selectedProjects.map((project) => project.project_name),
+  };
+}
+
 export default function Home() {
   const { isLoaded: isAuthLoaded, userId } = useAuth();
   const isHydrated = useRef(false);
@@ -29,8 +251,8 @@ export default function Home() {
   // App States
   const [projectId, setProjectId] = useState(() => Date.now().toString());
   const [projectName, setProjectName] = useState('');
-  const [projectList, setProjectList] = useState<any[]>([]);
-  const [chapters, setChapters] = useState<any[]>([]);
+  const [projectList, setProjectList] = useState<ProjectSnapshot[]>([]);
+  const [chapters, setChapters] = useState<ChapterEntry[]>([]);
   const [activeChapterIndex, setActiveChapterIndex] = useState<number | null>(null);
   const [referenceIds, setReferenceIds] = useState<string[]>([]);
   
@@ -62,29 +284,41 @@ export default function Home() {
   const [storySummary, setStorySummary] = useState('');
   const [styleAnalysis, setStyleAnalysis] = useState<any>(null);
   const [backResult, setBackResult] = useState('');
-  const [lockedFeature, setLockedFeature] = useState<string | null>(null);
   const prevActiveChapterIndex = useRef<number | null>(activeChapterIndex);
+  const storyBibleRequestCounter = useRef(0);
 
   useEffect(() => {
     const savedState = localStorage.getItem('eh_translator_ui_state');
+    const savedProjectLibrary = localStorage.getItem(PROJECT_LIBRARY_KEY);
     if (!savedState) {
+      if (savedProjectLibrary) {
+        try {
+          setProjectList(normalizeProjectSnapshots(JSON.parse(savedProjectLibrary)));
+        } catch (error) {
+          console.error('Failed to restore project library', error);
+        }
+      }
       isHydrated.current = true;
       return;
     }
 
     try {
       const parsed = JSON.parse(savedState);
+      const restoredProjects = normalizeProjectSnapshots(
+        savedProjectLibrary ? JSON.parse(savedProjectLibrary) : parsed.projectList
+      );
       if (parsed.projectId !== undefined) setProjectId(parsed.projectId);
       if (parsed.projectName !== undefined) setProjectName(parsed.projectName);
-      if (parsed.projectList !== undefined) setProjectList(parsed.projectList);
-      if (parsed.chapters !== undefined) setChapters(parsed.chapters);
+      if (restoredProjects.length) setProjectList(restoredProjects);
+      if (parsed.chapters !== undefined && Array.isArray(parsed.chapters)) {
+        setChapters(parsed.chapters.map((chapter: any, index: number) => normalizeChapter(chapter, `Part ${index + 1}`)));
+      }
       if (parsed.activeChapterIndex !== undefined) setActiveChapterIndex(parsed.activeChapterIndex);
       if (parsed.source !== undefined) setSource(parsed.source);
       if (parsed.result !== undefined) setResult(parsed.result);
       if (parsed.from !== undefined) setFrom(parsed.from);
       if (parsed.to !== undefined) setTo(parsed.to);
       if (parsed.provider !== undefined) setProvider(parsed.provider);
-      if (parsed.apiKeys !== undefined) setApiKeys(parsed.apiKeys);
       if (parsed.history !== undefined) setHistory(parsed.history);
       if (parsed.isZenMode !== undefined) setIsZenMode(parsed.isZenMode);
       if (parsed.backgroundMode !== undefined) setBackgroundMode(parsed.backgroundMode);
@@ -108,7 +342,6 @@ export default function Home() {
       localStorage.setItem('eh_translator_ui_state', JSON.stringify({
         projectId,
         projectName,
-        projectList,
         chapters,
         activeChapterIndex,
         source,
@@ -116,7 +349,6 @@ export default function Home() {
         from,
         to,
         provider,
-        apiKeys,
         history,
         isZenMode,
         backgroundMode,
@@ -131,7 +363,17 @@ export default function Home() {
     }, 320);
 
     return () => window.clearTimeout(timeout);
-  }, [projectId, projectName, projectList, chapters, activeChapterIndex, source, result, from, to, provider, apiKeys, history, isZenMode, backgroundMode, isCatMode, translationMode, worldContext, characterProfiles, storySummary, referenceIds]);
+  }, [projectId, projectName, chapters, activeChapterIndex, source, result, from, to, provider, history, isZenMode, backgroundMode, isCatMode, translationMode, worldContext, characterProfiles, storySummary, referenceIds]);
+
+  useEffect(() => {
+    if (!isHydrated.current) return;
+
+    const timeout = window.setTimeout(() => {
+      localStorage.setItem(PROJECT_LIBRARY_KEY, JSON.stringify(projectList));
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
+  }, [projectList]);
 
   // Sync current editor to chapters array to prevent data loss
   useEffect(() => {
@@ -154,18 +396,169 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [source, result, activeChapterIndex, chapters]);
 
-  // Track project changes
   useEffect(() => {
-    if (!isHydrated.current || !projectName) return;
+    if (!isHydrated.current) return;
+
+    const hasMeaningfulData =
+      Boolean(projectName.trim()) ||
+      Boolean(chapters.length) ||
+      Boolean(worldContext.trim()) ||
+      Boolean(characterProfiles.trim()) ||
+      Boolean(storySummary.trim());
+
+    if (!hasMeaningfulData) return;
+
+    const snapshotBase = {
+      id: projectId,
+      project_name: projectName.trim() || `Project ${projectId.slice(-4)}`,
+      chapters: chapters.map((chapter, index) => normalizeChapter(chapter, `Part ${index + 1}`)),
+      worldContext,
+      characterProfiles,
+      storySummary,
+      from,
+      to,
+    } satisfies Omit<ProjectSnapshot, 'updated_at'>;
+
     setProjectList(prev => {
-      const existing = prev.find(p => p.id === projectId);
-      if (existing) {
-        if (existing.project_name === projectName) return prev;
-        return prev.map(p => p.id === projectId ? { ...p, project_name: projectName } : p);
+      const existingIndex = prev.findIndex((project) => project.id === projectId);
+      const nextFingerprint = projectFingerprint(snapshotBase);
+      const existingFingerprint =
+        existingIndex >= 0
+          ? projectFingerprint({
+              id: prev[existingIndex].id,
+              project_name: prev[existingIndex].project_name,
+              chapters: prev[existingIndex].chapters,
+              worldContext: prev[existingIndex].worldContext,
+              characterProfiles: prev[existingIndex].characterProfiles,
+              storySummary: prev[existingIndex].storySummary,
+              from: prev[existingIndex].from,
+              to: prev[existingIndex].to,
+            })
+          : '';
+
+      if (existingFingerprint === nextFingerprint) return prev;
+
+      const nextSnapshot: ProjectSnapshot = {
+        ...snapshotBase,
+        updated_at: Date.now(),
+      };
+
+      if (existingIndex >= 0) {
+        const next = [...prev];
+        next[existingIndex] = nextSnapshot;
+        return next.sort((left, right) => right.updated_at - left.updated_at);
       }
-      return [...prev, { id: projectId, project_name: projectName }];
+
+      return [nextSnapshot, ...prev].slice(0, MAX_LOCAL_PROJECTS);
     });
-  }, [projectName, projectId]);
+  }, [projectId, projectName, chapters, worldContext, characterProfiles, storySummary, from, to]);
+
+  useEffect(() => {
+    if (!isHydrated.current) return;
+
+    setReferenceIds((previous) =>
+      previous.filter((referenceId) => referenceId !== projectId && projectList.some((project) => project.id === referenceId))
+    );
+  }, [projectId, projectList]);
+
+  useEffect(() => {
+    if (!isHydrated.current || !isAuthLoaded || !userId || !supabaseUrl || !supabaseAnonKey) return;
+
+    let cancelled = false;
+
+    const loadCloudProjects = async () => {
+      try {
+        const metadata = await listUserProjects(userId);
+        if (!metadata.length || cancelled) return;
+
+        const loadedProjects = await Promise.all(
+          metadata.slice(0, MAX_LOCAL_PROJECTS).map(async (projectMeta: any) => {
+            const projectData = await loadProjectFromCloud(userId, projectMeta.id);
+            if (!projectData) return null;
+
+            const normalized = normalizeProjectSnapshots([
+              {
+                id: projectMeta.id,
+                project_name: projectMeta.projectName,
+                updated_at: projectMeta.updatedAt ? Date.parse(projectMeta.updatedAt) : Date.now(),
+                ...projectData,
+              },
+            ]);
+
+            return normalized[0] || null;
+          })
+        );
+
+        if (cancelled) return;
+
+        const availableProjects = loadedProjects.filter((project): project is ProjectSnapshot => Boolean(project));
+        if (!availableProjects.length) return;
+
+        setProjectList((previous) => mergeProjectSnapshots(previous, availableProjects));
+      } catch (error) {
+        console.error('Failed to load cloud projects', error);
+      }
+    };
+
+    loadCloudProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthLoaded, userId]);
+
+  useEffect(() => {
+    if (!isHydrated.current || !isAuthLoaded || !userId || !supabaseUrl || !supabaseAnonKey) return;
+
+    const hasMeaningfulData =
+      Boolean(projectName.trim()) ||
+      Boolean(chapters.length) ||
+      Boolean(worldContext.trim()) ||
+      Boolean(characterProfiles.trim()) ||
+      Boolean(storySummary.trim());
+
+    if (!hasMeaningfulData) return;
+
+    const timeout = window.setTimeout(async () => {
+      try {
+        await saveProjectToCloud(userId, projectId, {
+          projectId,
+          projectName,
+          chapters,
+          activeChapterIndex,
+          source,
+          result,
+          from,
+          to,
+          worldContext,
+          characterProfiles,
+          storySummary,
+          referenceIds,
+          translationMode,
+        });
+      } catch (error) {
+        console.error('Failed to save project to cloud', error);
+      }
+    }, 1800);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    isAuthLoaded,
+    userId,
+    projectId,
+    projectName,
+    chapters,
+    activeChapterIndex,
+    source,
+    result,
+    from,
+    to,
+    worldContext,
+    characterProfiles,
+    storySummary,
+    referenceIds,
+    translationMode,
+  ]);
 
   const requestTranslation = async (payload: Record<string, unknown>) => {
     const res = await fetch('/api/translate', {
@@ -193,19 +586,24 @@ export default function Home() {
     return res.text();
   };
 
-  const patchActiveChapter = (patch: Record<string, unknown>) => {
-    if (activeChapterIndex === null) return;
+  const patchChapterAtIndex = (index: number, patch: Record<string, unknown>) => {
     setChapters((previous) => {
-      if (!previous[activeChapterIndex]) return previous;
+      if (!previous[index]) return previous;
 
-      const currentChapter = previous[activeChapterIndex];
-      const shouldUpdate = Object.entries(patch).some(([key, value]) => currentChapter[key] !== value);
+      const currentChapter = previous[index];
+      const currentChapterRecord = currentChapter as Record<string, unknown>;
+      const shouldUpdate = Object.entries(patch).some(([key, value]) => currentChapterRecord[key] !== value);
       if (!shouldUpdate) return previous;
 
       const next = [...previous];
-      next[activeChapterIndex] = { ...currentChapter, ...patch };
+      next[index] = { ...currentChapter, ...patch };
       return next;
     });
+  };
+
+  const patchActiveChapter = (patch: Record<string, unknown>) => {
+    if (activeChapterIndex === null) return;
+    patchChapterAtIndex(activeChapterIndex, patch);
   };
 
   const openChapter = (index: number | null, chapterList = chapters) => {
@@ -228,29 +626,142 @@ export default function Home() {
     });
   };
 
+  const referenceBundle = buildReferenceBundle(referenceIds, projectList, projectId);
+
+  const buildEpisodeContext = (chapterIndex = activeChapterIndex) => {
+    const continuityBlocks: string[] = [];
+
+    if (chapterIndex !== null && chapterIndex > 0 && chapters[chapterIndex - 1]) {
+      const previousChapter = chapters[chapterIndex - 1];
+      const previousChapterText = (previousChapter.result || previousChapter.content).trim();
+
+      if (previousChapterText) {
+        continuityBlocks.push(
+          `[현재 프로젝트 이전 화 / ${previousChapter.name}]\n${limitText(previousChapterText, 5000)}`
+        );
+      }
+    }
+
+    if (referenceBundle.episodeContext) {
+      continuityBlocks.push(referenceBundle.episodeContext);
+    }
+
+    return limitText(continuityBlocks.join('\n\n---\n\n'), REFERENCE_TEXT_LIMIT);
+  };
+
+  const buildContinuityBundle = (storySummaryBase = storySummary, chapterIndex = activeChapterIndex) => ({
+    context: limitText([worldContext.trim(), referenceBundle.context].filter(Boolean).join('\n\n'), 6500),
+    characterProfiles: limitText(
+      [characterProfiles.trim(), referenceBundle.characterProfiles].filter(Boolean).join('\n\n'),
+      6500
+    ),
+    storySummary: limitText(
+      [storySummaryBase.trim(), referenceBundle.storySummary].filter(Boolean).join('\n\n'),
+      STORY_BIBLE_LIMIT
+    ),
+    continuityNotes: referenceBundle.continuityNotes,
+    episodeContext: buildEpisodeContext(chapterIndex),
+  });
+
+  const buildTranslationPayload = (
+    payload: Record<string, unknown>,
+    options?: { storySummaryBase?: string; chapterIndex?: number | null }
+  ) => {
+    const continuity = buildContinuityBundle(options?.storySummaryBase, options?.chapterIndex ?? activeChapterIndex);
+
+    return {
+      tone: 'natural',
+      genre: translationMode === 'novel' ? 'Novel' : 'General',
+      context: continuity.context,
+      characterProfiles: continuity.characterProfiles,
+      storySummary: continuity.storySummary,
+      continuityNotes: continuity.continuityNotes,
+      episodeContext: continuity.episodeContext,
+      referenceIds,
+      ...payload,
+    };
+  };
+
+  const updateStoryBibleAfterTranslation = async (options: {
+    translatedText: string;
+    chapterName: string;
+    chapterIndex?: number | null;
+    storySummaryBase?: string;
+  }) => {
+    const { translatedText, chapterName, chapterIndex = activeChapterIndex, storySummaryBase = storySummary } = options;
+
+    if (translationMode !== 'novel' || !translatedText.trim()) {
+      return storySummaryBase;
+    }
+
+    const summaryProvider =
+      (apiKeys.gemini && 'gemini') ||
+      (apiKeys.openai && 'openai') ||
+      (apiKeys.claude && 'claude') ||
+      provider;
+
+    const requestId = ++storyBibleRequestCounter.current;
+    setStatusMsg('UPDATING STORY BIBLE');
+
+    try {
+      const summary = await requestTranslation(
+        buildTranslationPayload(
+          {
+            text: `[${chapterName}]\n\n${translatedText}`,
+            from: to,
+            to,
+            provider: summaryProvider,
+            apiKey: apiKeys[summaryProvider] || '',
+            stage: 10,
+            mode: 'novel',
+          },
+          { storySummaryBase, chapterIndex }
+        )
+      );
+
+      const mergedStoryBible = mergeStoryBible(storySummaryBase, summary);
+
+      if (storyBibleRequestCounter.current === requestId) {
+        setStorySummary(mergedStoryBible);
+      }
+
+      if (chapterIndex !== null && typeof chapterIndex === 'number') {
+        patchChapterAtIndex(chapterIndex, { storyNote: summary.trim() });
+      }
+
+      return mergedStoryBible;
+    } catch (error) {
+      console.error('Story Bible update failed:', error);
+      return storySummaryBase;
+    }
+  };
+
   // Core Actions
   const translate = async () => {
     if (!source.trim()) return;
     setLoading(true);
     setStatusMsg('FAST DRAFT');
     try {
-      const translated = await requestTranslation({
-        text: source,
-        from,
-        to,
-        provider,
-        apiKey: apiKeys[provider] || '',
-        mode: translationMode,
-        tone: 'natural',
-        genre: translationMode === 'novel' ? 'Novel' : 'General',
-        context: worldContext,
-        characterProfiles,
-        storySummary,
-        referenceIds,
-      });
+      const translated = await requestTranslation(
+        buildTranslationPayload({
+          text: source,
+          from,
+          to,
+          provider,
+          apiKey: apiKeys[provider] || '',
+          mode: translationMode,
+        })
+      );
       setResult(translated);
       patchActiveChapter({ result: translated, isDone: true, stageProgress: 5 });
+      const mergedStoryBible = await updateStoryBibleAfterTranslation({
+        translatedText: translated,
+        chapterName: activeChapter?.name || 'Current Chapter',
+      });
       setHistory((prev) => [{ source, result: translated, time: Date.now(), from, to }, ...prev.slice(0, 19)]);
+      if (translationMode === 'novel' && mergedStoryBible !== storySummary) {
+        setStatusMsg('STORY BIBLE UPDATED');
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : '번역 오류가 발생했습니다.');
     } finally {
@@ -278,22 +789,18 @@ export default function Home() {
       let currentResult = source;
       for (const item of stageSequence) {
         setStatusMsg(item.label);
-        currentResult = await requestTranslation({
-          text: item.stage === 1 ? source : currentResult,
-          sourceText: source,
-          stage: item.stage,
-          from,
-          to,
-          provider: item.providerId,
-          apiKey: apiKeys[item.providerId] || '',
-          mode: translationMode,
-          tone: 'natural',
-          genre: translationMode === 'novel' ? 'Novel' : 'General',
-          context: worldContext,
-          characterProfiles,
-          storySummary,
-          referenceIds,
-        });
+        currentResult = await requestTranslation(
+          buildTranslationPayload({
+            text: item.stage === 1 ? source : currentResult,
+            sourceText: source,
+            stage: item.stage,
+            from,
+            to,
+            provider: item.providerId,
+            apiKey: apiKeys[item.providerId] || '',
+            mode: translationMode,
+          })
+        );
         setResult(currentResult);
         patchActiveChapter({
           result: currentResult,
@@ -301,7 +808,14 @@ export default function Home() {
           isDone: item.stage === 5,
         });
       }
+      const mergedStoryBible = await updateStoryBibleAfterTranslation({
+        translatedText: currentResult,
+        chapterName: activeChapter?.name || 'Current Chapter',
+      });
       setHistory((prev) => [{ source, result: currentResult, time: Date.now(), from, to }, ...prev.slice(0, 19)]);
+      if (translationMode === 'novel' && mergedStoryBible !== storySummary) {
+        setStatusMsg('STORY BIBLE UPDATED');
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Deep Pipeline 중 오류가 발생했습니다.');
     } finally {
@@ -321,7 +835,37 @@ export default function Home() {
         throw new Error(data.error || 'URL 읽기 오류');
       }
       if (data.text) {
-        setSource(data.text);
+        const parsedUrl = new URL(urlInput);
+        const rawSlug = decodeURIComponent(parsedUrl.pathname.split('/').filter(Boolean).pop() || parsedUrl.hostname);
+        const chapterName = rawSlug
+          .replace(/[-_]+/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim() || `Web Episode ${chapters.length + 1}`;
+        const importedChapter = normalizeChapter({
+          name: chapterName,
+          content: data.text,
+          result: '',
+          isDone: false,
+          stageProgress: 0,
+          storyNote: '',
+        }, chapterName);
+
+        if (activeChapterIndex !== null && chapters[activeChapterIndex] && !chapters[activeChapterIndex].content.trim()) {
+          patchActiveChapter({
+            name: importedChapter.name,
+            content: importedChapter.content,
+            result: '',
+            isDone: false,
+            stageProgress: 0,
+          });
+          setSource(importedChapter.content);
+          setResult('');
+        } else {
+          const newIndex = Math.min(chapters.length, 29);
+          setChapters((prev) => [...prev, importedChapter].slice(0, 30));
+          openChapter(newIndex, [...chapters, importedChapter].slice(0, 30));
+        }
+
         setShowUrlImport(false);
         setUrlInput('');
       } else {
@@ -354,17 +898,18 @@ export default function Home() {
   };
 
   const exportData = () => {
-    if (!confirm('현재 프로젝트의 모든 설정과 챕터 데이터를 JSON 파일로 추출하시겠습니까?')) return;
+    if (!confirm('현재 프로젝트의 핵심 번역 데이터만 JSON 파일로 추출하시겠습니까?\n보안상 API 키와 참조 프로젝트 원문은 포함되지 않습니다.')) return;
     const blob = new Blob([JSON.stringify({
       projectName,
       chapters,
+      projectLibrary: toProjectMeta(projectList),
       activeChapterIndex,
+      referenceIds,
       source,
       result,
       from,
       to,
       provider,
-      apiKeys,
       history,
       worldContext,
       characterProfiles,
@@ -397,18 +942,22 @@ export default function Home() {
         const parsed = JSON.parse(String(reader.result));
         startTransition(() => {
           if (parsed.projectName !== undefined) setProjectName(parsed.projectName);
-          if (parsed.chapters !== undefined) setChapters(parsed.chapters);
+          if (parsed.chapters !== undefined && Array.isArray(parsed.chapters)) {
+            setChapters(parsed.chapters.map((chapter: any, index: number) => normalizeChapter(chapter, `Part ${index + 1}`)));
+          }
+          if (parsed.projectList !== undefined) setProjectList(normalizeProjectSnapshots(parsed.projectList));
+          if (parsed.projectLibrary !== undefined) setProjectList(normalizeProjectSnapshots(parsed.projectLibrary));
           if (parsed.activeChapterIndex !== undefined) setActiveChapterIndex(parsed.activeChapterIndex);
           if (parsed.source !== undefined) setSource(parsed.source);
           if (parsed.result !== undefined) setResult(parsed.result);
           if (parsed.from !== undefined) setFrom(parsed.from);
           if (parsed.to !== undefined) setTo(parsed.to);
           if (parsed.provider !== undefined) setProvider(parsed.provider);
-          if (parsed.apiKeys !== undefined) setApiKeys(parsed.apiKeys);
           if (parsed.history !== undefined) setHistory(parsed.history);
           if (parsed.worldContext !== undefined) setWorldContext(parsed.worldContext);
           if (parsed.characterProfiles !== undefined) setCharacterProfiles(parsed.characterProfiles);
           if (parsed.storySummary !== undefined) setStorySummary(parsed.storySummary);
+          if (parsed.referenceIds !== undefined) setReferenceIds(Array.isArray(parsed.referenceIds) ? parsed.referenceIds : []);
           if (parsed.backgroundMode !== undefined) setBackgroundMode(parsed.backgroundMode);
           if (parsed.isZenMode !== undefined) setIsZenMode(parsed.isZenMode);
           if (parsed.isCatMode !== undefined) setIsCatMode(parsed.isCatMode);
@@ -437,13 +986,6 @@ export default function Home() {
       const newChapters: any[] = [];
 
       for (const file of Array.from(files)) {
-        const lowerName = file.name.toLowerCase();
-
-        if (lowerName.endsWith('.txt') || lowerName.endsWith('.md')) {
-          newChapters.push({ name: file.name, content: await file.text(), result: '', isDone: false, stageProgress: 0 });
-          continue;
-        }
-
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
@@ -451,13 +993,29 @@ export default function Home() {
 
         if (!res.ok) throw new Error(data.error || `${file.name} 파싱 실패`);
 
-        for (const chapter of data.chapters || []) {
+        const parsedChapters = Array.isArray(data.chapters) ? data.chapters : [];
+        if (!parsedChapters.length) {
+          throw new Error(`${file.name}에서 가져올 본문을 찾지 못했습니다.`);
+        }
+
+        const useBareFileName =
+          parsedChapters.length === 1 &&
+          typeof parsedChapters[0]?.title === 'string' &&
+          /^split part \d+$/i.test(parsedChapters[0].title.trim());
+
+        for (const chapter of parsedChapters) {
+          const chapterTitle =
+            typeof chapter?.title === 'string' && chapter.title.trim()
+              ? chapter.title.trim()
+              : 'Imported Part';
+
           newChapters.push({
-            name: `${file.name} - ${chapter.title}`,
-            content: chapter.content,
+            name: useBareFileName ? file.name : `${file.name} - ${chapterTitle}`,
+            content: typeof chapter?.content === 'string' ? chapter.content : '',
             result: '',
             isDone: false,
             stageProgress: 0,
+            storyNote: '',
           });
         }
       }
@@ -487,44 +1045,45 @@ export default function Home() {
     setLoading(true);
     let successCount = 0;
     let failCount = 0;
+    let rollingStorySummary = storySummary;
     try {
       for (let index = 0; index < chapters.length; index += 1) {
         const chapter = chapters[index];
         if (chapter.isDone && !confirm(`${chapter.name}은(는) 이미 완료되었습니다. 재번역할까요?`)) continue;
         
-        setActiveChapterIndex(index);
-        setSource(chapter.content);
+        openChapter(index);
         setStatusMsg(`BATCH ${index + 1}/${chapters.length}`);
         
         try {
-          const translated = await requestTranslation({
-            text: chapter.content,
-            from,
-            to,
-            provider,
-            apiKey: apiKeys[provider] || '',
-            mode: translationMode,
-            tone: 'natural',
-            genre: translationMode === 'novel' ? 'Novel' : 'General',
-            context: worldContext,
-            characterProfiles,
-            storySummary,
-            referenceIds,
-          });
+          const translated = await requestTranslation(
+            buildTranslationPayload(
+              {
+                text: chapter.content,
+                from,
+                to,
+                provider,
+                apiKey: apiKeys[provider] || '',
+                mode: translationMode,
+              },
+              { storySummaryBase: rollingStorySummary, chapterIndex: index }
+            )
+          );
           setResult(translated);
-          setChapters((prev) => {
-            const next = [...prev];
-            next[index] = { ...next[index], result: translated, isDone: true, stageProgress: 5 };
-            return next;
-          });
+          patchChapterAtIndex(index, { result: translated, isDone: true, stageProgress: 5 });
+
+          if (translationMode === 'novel') {
+            rollingStorySummary = await updateStoryBibleAfterTranslation({
+              translatedText: translated,
+              chapterName: chapter.name,
+              chapterIndex: index,
+              storySummaryBase: rollingStorySummary,
+            });
+          }
+
           successCount++;
         } catch (err: any) {
           console.error(`Batch error at idx ${index}:`, err);
-          setChapters((prev) => {
-             const next = [...prev];
-             next[index] = { ...next[index], error: err.message || 'Error' };
-             return next;
-          });
+          patchChapterAtIndex(index, { error: err.message || 'Error' });
           failCount++;
         }
       }
@@ -580,22 +1139,20 @@ export default function Home() {
     setLoading(true);
     setStatusMsg('FINAL POLISH');
     try {
-      const refined = await requestTranslation({
-        text: result,
-        sourceText: source,
-        stage: 5,
-        from,
-        to,
-        provider: apiKeys.claude ? 'claude' : provider,
-        apiKey: apiKeys.claude || apiKeys[provider] || '',
-        mode: translationMode,
-        tone: 'natural',
-        genre: translationMode === 'novel' ? 'Novel' : 'General',
-        context: worldContext,
-        characterProfiles,
-        storySummary,
-      });
+      const refined = await requestTranslation(
+        buildTranslationPayload({
+          text: result,
+          sourceText: source,
+          stage: 5,
+          from,
+          to,
+          provider: apiKeys.claude ? 'claude' : provider,
+          apiKey: apiKeys.claude || apiKeys[provider] || '',
+          mode: translationMode,
+        })
+      );
       setResult(refined);
+      patchActiveChapter({ result: refined, isDone: true, stageProgress: 5 });
     } catch (error) {
       alert(error instanceof Error ? error.message : '다듬기 실패');
     } finally {
@@ -640,7 +1197,14 @@ export default function Home() {
     ? new Date(lastSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     : '준비 완료';
   const atmosphereLabel = backgroundMode === 'glacial' ? 'Editorial White' : 'Nebula Depth';
-  const pipelineLabel = translationMode === 'novel' ? 'Narrative Pipeline' : 'Precision General';
+  const pipelineLabel = translationMode === 'novel' ? 'Narrative Pipeline' : 'Auxiliary General';
+  const cloudSyncEnabled = Boolean(isAuthLoaded && userId && supabaseUrl && supabaseAnonKey);
+  const referenceStatusLabel = referenceBundle.projectNames.length
+    ? `참조 중: ${referenceBundle.projectNames.join(', ')}`
+    : '참조 프로젝트 없음';
+  const storyBibleStatusLabel = storySummary.trim()
+    ? `Story Bible 누적 ${storySummary.split('\n---\n').length}블록`
+    : 'Story Bible 아직 비어 있음';
 
   return (
     <div className={`min-h-screen theme-${backgroundMode} font-body ${isZenMode ? 'zen-mode' : ''}`}>
@@ -826,6 +1390,10 @@ export default function Home() {
                   <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">
                     {chapters.length ? `${chapters.length}개 챕터 관리 중` : '문서를 불러오면 챕터가 여기에 쌓입니다.'}
                   </div>
+                  <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">{referenceStatusLabel}</div>
+                  <div className="theme-pill rounded-full px-3 py-2 text-[11px] font-semibold">
+                    {cloudSyncEnabled ? 'Cloud Sync 활성' : '로컬 작업 모드'}
+                  </div>
                 </div>
               </div>
 
@@ -854,6 +1422,7 @@ export default function Home() {
                     ? `${activeChapter.name}${activeChapter.stageProgress ? ` · Stage ${activeChapter.stageProgress}` : ''}`
                     : '활성 챕터를 선택하면 진행 단계가 여기 표시됩니다.'}
                 </p>
+                <p className="mt-2 text-[11px] leading-relaxed theme-text-secondary">{storyBibleStatusLabel}</p>
               </div>
             </div>
           )}
@@ -906,7 +1475,7 @@ export default function Home() {
                       <div className="flex gap-2 items-center">
                         <input type="text" value={projectName} onChange={(e) => setProjectName(e.target.value)} 
                           placeholder="프로젝트명" className="theme-field flex-1 rounded-lg px-3 py-2 text-xs outline-none" />
-                        <button onClick={() => { if(confirm('초기화 하시겠습니까?')) { setProjectId(Date.now().toString()); setProjectName(''); setChapters([]); setSource(''); setResult(''); } }}
+                        <button onClick={() => { if(confirm('초기화 하시겠습니까?')) { setProjectId(Date.now().toString()); setProjectName(''); setChapters([]); setSource(''); setResult(''); setStorySummary(''); setWorldContext(''); setCharacterProfiles(''); setReferenceIds([]); } }}
                           className="rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 px-3 py-2 text-[10px] font-bold text-white transition-all hover:brightness-110">신규 생성</button>
                       </div>
                     </div>
@@ -921,6 +1490,9 @@ export default function Home() {
                           </button>
                        ))}
                     </div>
+                    {projectList.filter((project) => project.id !== projectId).length === 0 && (
+                      <p className="mt-2 text-[11px] theme-text-secondary">아직 저장된 다른 프로젝트가 없습니다. 프로젝트명을 붙이고 작업하면 자동으로 참조 목록에 쌓입니다.</p>
+                    )}
                   </div>
                 </div>
                 <div className="lg:col-span-2">
@@ -996,25 +1568,39 @@ export default function Home() {
           {/* Action Bar */}
           <div className="mt-8 max-w-4xl mx-auto space-y-3">
             <div className="flex items-center gap-2 p-1 glass-panel rounded-2xl">
-              <button onClick={() => setTranslationMode('novel')} className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest transition-all ${translationMode === 'novel' ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-text-secondary hover:brightness-110'}`}>📖 NOVEL MODE</button>
-              <button onClick={() => setTranslationMode('general')} className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest transition-all ${translationMode === 'general' ? 'bg-linear-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20' : 'theme-text-secondary hover:brightness-110'}`}>📄 GENERAL MODE</button>
+              <button onClick={() => setTranslationMode('novel')} className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest transition-all ${translationMode === 'novel' ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-text-secondary hover:brightness-110'}`}>📖 NOVEL WORKSPACE</button>
+              <button onClick={() => setTranslationMode('general')} className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest transition-all ${translationMode === 'general' ? 'bg-linear-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20' : 'theme-text-secondary hover:brightness-110'}`}>📄 GENERAL ASSIST</button>
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => setShowUrlImport(!showUrlImport)} className="theme-pill px-4 py-3 rounded-xl text-[10px] font-bold">🌐 IMPORT URL</button>
+              <button onClick={() => setShowUrlImport(!showUrlImport)} className="theme-pill px-4 py-3 rounded-xl text-[10px] font-bold">🌐 웹 회차 가져오기</button>
               {showUrlImport && (
                 <div className="flex-1 flex gap-2 animate-in fade-in slide-in-from-left-2 transition-all">
-                  <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://..." className="theme-field flex-1 rounded-xl px-4 py-2 text-xs outline-none" />
+                  <input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="공개 연재 페이지 URL" className="theme-field flex-1 rounded-xl px-4 py-2 text-xs outline-none" />
                   <button onClick={importUrl} disabled={loading} className="px-6 py-2 bg-emerald-600 rounded-xl text-[10px] font-bold text-white">FETCH</button>
                 </div>
               )}
             </div>
+            {showUrlImport && (
+              <p className="px-1 text-[11px] leading-relaxed theme-text-secondary">
+                범용 웹 번역이 아니라 공개 웹소설/연재 회차의 본문을 가져오는 보조 기능으로 두었습니다.
+              </p>
+            )}
 
             <div className="flex gap-4">
               <button onClick={translate} disabled={loading || !source.trim()} className="theme-pill flex-1 rounded-2xl py-5 text-[11px] font-black tracking-widest transition-all hover:brightness-105">FAST DRAFT</button>
               <button onClick={deepTranslate} disabled={loading || !source.trim()} 
                  className={`flex-2 py-5 rounded-2xl text-[11px] font-black tracking-widest text-white shadow-2xl transition-all ${translationMode === 'novel' ? 'bg-linear-to-r from-purple-600 to-indigo-600' : 'bg-linear-to-r from-emerald-600 to-teal-600'}`}>
                  {statusMsg || (translationMode === 'novel' ? 'DEEP NOVEL PIPELINE' : 'ACCURATE GENERAL')}
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button onClick={analyzeStyle} disabled={!source.trim()} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">문체 분석</button>
+              <button onClick={refineResult} disabled={!result.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">최종 다듬기</button>
+              <button onClick={backTranslate} disabled={!result.trim() || loading} className="theme-pill rounded-xl px-4 py-3 text-[10px] font-bold transition-all hover:brightness-105 disabled:opacity-40">역검수</button>
+              <button onClick={() => setIsCatMode((previous) => !previous)} className={`rounded-xl px-4 py-3 text-[10px] font-bold transition-all ${isCatMode ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' : 'theme-pill hover:brightness-105'}`}>
+                {isCatMode ? '통합 보기' : '라인 비교'}
               </button>
             </div>
           </div>
@@ -1033,6 +1619,7 @@ export default function Home() {
             </div>
             <div className="space-y-4">
               <h3 className="theme-kicker flex justify-between">Story Bible <button onClick={() => setShowSummary(!showSummary)} style={{ color: accentTextColor }}>Edit</button></h3>
+              <p className="text-[11px] leading-relaxed theme-text-secondary">소설 모드 번역 후 자동 요약이 이어붙여집니다. 필요하면 여기서 직접 다듬을 수 있습니다.</p>
               {showSummary && <textarea value={storySummary} onChange={(e) => setStorySummary(e.target.value)} className="theme-field editor-pane w-full h-40 rounded-xl p-4 text-[10px] outline-none" />}
             </div>
             <div className="pt-8 border-t border-white/5">
@@ -1044,17 +1631,6 @@ export default function Home() {
 
       {/* Overlays */}
       {backResult && <div className="fixed bottom-10 right-10 z-50 w-96 glass-panel p-6 animate-in fade-in slide-in-from-bottom-5"><h4 className="theme-kicker mb-2" style={{ color: '#10b981' }}>Integrity Check</h4><div className="theme-text-primary max-h-60 overflow-y-auto text-xs leading-relaxed">{backResult}</div><button onClick={() => setBackResult('')} className="theme-text-secondary mt-4 text-[9px]">CLOSE</button></div>}
-      
-      {lockedFeature && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-6 animate-in fade-in duration-500">
-          <div className="max-w-sm w-full glass-panel p-10 text-center relative overflow-hidden">
-             <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-500/20 text-3xl">🔒</div>
-             <h2 className="theme-text-primary text-2xl font-black mb-2">Premium Feature</h2>
-             <p className="theme-text-secondary mb-8 text-sm">{lockedFeature}는 정식 배포 시 공개됩니다.</p>
-             <button onClick={() => setLockedFeature(null)} className="w-full py-4 bg-white text-black font-black rounded-xl hover:bg-gray-200 transition-all">CHECK</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

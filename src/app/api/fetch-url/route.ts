@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: `외부 서버 응답 오류: ${response.status} ${response.statusText}` },
+        { error: `외부 사이트 응답 오류 (${response.status})` },
         { status: 502 }
       );
     }
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
     }
     console.error('fetch-url error:', err);
     return NextResponse.json(
-      { error: `URL 읽기 실패: ${err.message || '알 수 없는 오류'}` },
+      { error: 'URL 본문을 읽는 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }
