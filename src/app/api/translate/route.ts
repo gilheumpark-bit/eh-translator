@@ -17,10 +17,18 @@ const DEFAULT_MODELS: Record<string, string> = {
 function buildPrompt(params: any) {
   const { text, from, to, tone, genre, context, glossary, characterProfiles, episodeContext, storySummary, sourceText, stage } = params;
 
-  let baseInstructions = `You are a professional literary translator translating a novel from ${from} to ${to}.\nGenre: ${genre}\nTone: ${tone}\n`;
-  if (glossary) baseInstructions += `Glossary:\n${glossary}\n`;
-  if (characterProfiles) baseInstructions += `Character Profiles:\n${characterProfiles}\n`;
-  if (storySummary) baseInstructions += `Previous Summary:\n${storySummary}\n`;
+  let baseInstructions = `[SYSTEM: DETERMINISTIC TRANSLATION ENGINE]
+You are a highly constrained, professional translation engine converting text from ${from} to ${to}.
+<strict_directives>
+1. NO YAP: Output ONLY the requested final text. NEVER output intros/outros like "Here is the translation" or "Understood".
+2. FORMAT PRESERVATION: Do NOT wrap your output in markdown code blocks (\`\`\`). Do NOT alter capitalization artificially.
+3. 1:1 STRUCTURE: You MUST preserve the exact paragraph/line break structure of the source text. Do not merge or split paragraphs.
+4. TONE & GENRE OVERRIDE: Your output MUST strictly reflect Tone: [${tone}] and Genre: [${genre}].
+</strict_directives>
+`;
+  if (glossary) baseInstructions += `[Glossary]:\n${glossary}\n`;
+  if (characterProfiles) baseInstructions += `[Character Profiles]:\n${characterProfiles}\n`;
+  if (storySummary) baseInstructions += `[Previous Story Summary]:\n${storySummary}\n`;
   if (episodeContext) {
     baseInstructions += `
 CRITICAL INSTRUCTION: The following is the PREVIOUS CHAPTER'S TRANSLATION.
@@ -36,16 +44,15 @@ ${episodeContext}
 
   if (stage === 1) {
     prompt = `${baseInstructions}
-MISSION: Agent 1 (Draft Translator). You are the Chief Translator.
-Focus on structural accuracy and establishing the initial draft. Do not miss any sentences.
-Translate the following source text:
+MISSION: Stage 1 (Draft Translator).
+Provide a highly accurate, 1:1 structural draft translation of the source text. Do not miss any sentences.
 <source_text>
 ${text}
 </source_text>`;
   } else if (stage === 2) {
     prompt = `${baseInstructions}
-MISSION: Agent 2 (Lore Editor). You are the Lore/Character Tone Master.
-Review the Source Text and the Current Draft. Fix character speech patterns, honorifics, and respect the character profiles.
+MISSION: Stage 2 (Lore/Tone Editor).
+Review the Source Text and the Current Draft. Fix character speech patterns, honorifics, and respect the Character Profiles strictly.
 <source_text>
 ${sourceText}
 </source_text>
@@ -55,7 +62,7 @@ ${text}
 Output ONLY the revised draft.`;
   } else if (stage === 3) {
     prompt = `${baseInstructions}
-MISSION: Agent 3 (Pacing Agent). You are the Pacing/Rhythm Supervisor.
+MISSION: Stage 3 (Pacing & Rhythm Agent).
 Ensure the translation matches the original author's sentence length, rhythm, and pacing. Keep short impacts short, and long descriptive sentences flowing.
 <source_text>
 ${sourceText}
@@ -66,8 +73,10 @@ ${text}
 Output ONLY the revised draft.`;
   } else if (stage === 4) {
     prompt = `${baseInstructions}
-MISSION: Agent 4 (Subtext Analyst). You are the Subtext and Metaphor Expert.
-Identify implied meanings and foreshadowing in the source text and ensure they are preserved or localized correctly in the draft without being overly literal.
+MISSION: Stage 4 (Localization & Cultural Adaptation Expert).
+Your ultimate goal is Cultural Resonance. Identify idioms, metaphors, slang, jokes, or cultural nuances in the source text that sound awkward when translated literally.
+You MUST boldly adapt and localize these expressions so they feel completely native, natural, and culturally impactful to the target audience, all while keeping the intended core emotion and meaning.
+Do NOT be overly literal if it ruins the flow.
 <source_text>
 ${sourceText}
 </source_text>
@@ -77,7 +86,7 @@ ${text}
 Output ONLY the revised draft.`;
   } else if (stage === 5) {
     prompt = `${baseInstructions}
-MISSION: Agent 5 (Chief Reviewer). You are the Editor-in-Chief.
+MISSION: Stage 5 (Chief Editor).
 Perform a final polish. Fix any lingering awkward phrasing, typos, or grammatical errors. Ensure perfect narrative flow.
 <source_text>
 ${sourceText}
@@ -85,7 +94,7 @@ ${sourceText}
 <current_draft>
 ${text}
 </current_draft>
-Output ONLY the final polished draft.`;
+Output ONLY the final polished draft. Never add commentary.`;
   } else if (stage === 10) {
     prompt = `${baseInstructions}
 MISSION: Story Summarizer.
@@ -129,11 +138,16 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildPrompt(body);
 
+    // Dynamic temperature tuning: Stage 4 (Localization) requires more creativity
+    const dynamicTemperature = (stage === 4) ? 0.4 : 0.1;
+    const dynamicTopP = (stage === 4) ? 0.95 : 0.9;
+
     if (stage === 10 || stage === 0) {
       const { text } = await generateText({
         model: aiModel,
         prompt: prompt,
-        temperature: 0.3,
+        temperature: dynamicTemperature,
+        topP: dynamicTopP,
       });
       return NextResponse.json({ result: text, stage });
     }
@@ -141,7 +155,8 @@ export async function POST(req: NextRequest) {
     const resultStream = await streamText({
       model: aiModel,
       prompt: prompt,
-      temperature: 0.3,
+      temperature: dynamicTemperature,
+      topP: dynamicTopP,
     });
 
     return resultStream.toTextStreamResponse();
