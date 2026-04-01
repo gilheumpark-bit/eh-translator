@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth, SignInButton, UserButton } from '@clerk/nextjs';
-import { saveProjectToCloud, loadProjectFromCloud } from '@/lib/supabase';
+import { saveProjectToCloud, loadProjectFromCloud, listUserProjects, getProjectsForReference } from '@/lib/supabase';
 
 const LANGUAGES = [
   { code: 'Korean', label: '한국어', flag: '🇰🇷' },
@@ -76,6 +76,16 @@ export default function Home() {
   const [styleAnalysis, setStyleAnalysis] = useState<any>(null);
   const [isCatMode, setIsCatMode] = useState(false);
   const [lockedFeature, setLockedFeature] = useState<string | null>(null);
+  const [translationMode, setTranslationMode] = useState<'novel' | 'general'>('novel');
+  const [urlInput, setUrlInput] = useState('');
+  const [showUrlImport, setShowUrlImport] = useState(false);
+
+  // V3.1 Multi-Project & Cross Reference
+  const [projectId, setProjectId] = useState<string>('default_session');
+  const [projectName, setProjectName] = useState<string>('');
+  const [projectList, setProjectList] = useState<any[]>([]);
+  const [referenceIds, setReferenceIds] = useState<string[]>([]);
+  const [crossReferenceContext, setCrossReferenceContext] = useState<string>('');
 
   const isLoaded = useRef(false);
 
@@ -140,6 +150,7 @@ export default function Home() {
         // v3.0 Additional states
         if (s.characterProfiles !== undefined) setCharacterProfiles(s.characterProfiles);
         if (s.storySummary !== undefined) setStorySummary(s.storySummary);
+        if (s.translationMode !== undefined) setTranslationMode(s.translationMode);
       }
       isLoaded.current = true;
     }
@@ -150,17 +161,42 @@ export default function Home() {
   // Auto-save (Debounced to prevent rendering freezes)
   useEffect(() => {
     if (!isLoaded.current) return;
-    const state = { chapters, activeChapterIndex, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, history, characterProfiles, storySummary };
+    const state = { chapters, activeChapterIndex, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, history, characterProfiles, storySummary, projectName, translationMode };
     
     const saveTimer = setTimeout(() => {
       localStorage.setItem('eh-translator-v2-state', JSON.stringify(state));
       // [A안] Supabase 클라우드 실시간 자동 동기화 (userId가 있을 때만)
       if (userId) {
-        saveProjectToCloud(userId, 'default_session', state).catch(console.error);
+        saveProjectToCloud(userId, projectId, state).catch(console.error);
       }
     }, 3000); 
     return () => clearTimeout(saveTimer);
-  }, [chapters, activeChapterIndex, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, history, characterProfiles, storySummary]);
+  }, [chapters, activeChapterIndex, from, to, provider, apiKeys, model, glossary, tone, genre, context, worldContext, history, characterProfiles, storySummary, projectName, projectId]);
+
+  // V3.1: Fetch List of projects when user logs in
+  useEffect(() => {
+    if (userId) {
+       listUserProjects(userId).then(setProjectList).catch(console.error);
+    }
+  }, [userId]);
+
+  // V3.1: Construct Cross Reference Context dynamically when IDs change
+  useEffect(() => {
+    if (!userId || referenceIds.length === 0) {
+       setCrossReferenceContext('');
+       return;
+    }
+    const fetchRefs = async () => {
+       try {
+         const refs = await getProjectsForReference(userId, referenceIds);
+         const combined = refs.map((r, i) => `[참조 데이터 ${i+1}: ${r.project_name || '이전 프로젝트'}]\n요약:\n${r.storySummary || '(요약 없음)'}\n\n참조인물:\n${r.characterProfiles || '(없음)'}`).join('\n\n---\n\n');
+         setCrossReferenceContext(combined);
+       } catch (e) {
+         console.error('Failed to load cross references', e);
+       }
+    };
+    fetchRefs();
+  }, [userId, referenceIds]);
 
   const exportData = () => {
     const state = { source, result, from, to, provider, apiKeys, model, glossary, tone, history, fileList };
@@ -215,7 +251,12 @@ export default function Home() {
         }
       }
       
-      const updatedChapters = [...chapters, ...newChapters];
+      let updatedChapters = [...chapters, ...newChapters];
+      if (updatedChapters.length > 30) {
+        alert(`프로젝트(볼륨) 1개당 최대 30화까지만 허용됩니다.\n총 ${updatedChapters.length}화 중 30화만 자릅니다.\n초과된 분량은 번역 완료 후 새 프로젝트를 만들어 "이전 프로젝트 참조" 필드를 활용해 이어가세요.`);
+        updatedChapters = updatedChapters.slice(0, 30);
+        newChapters = updatedChapters.slice(chapters.length);
+      }
       setChapters(updatedChapters);
       if (newChapters.length > 0) {
         setActiveChapterIndex(chapters.length); 
@@ -407,9 +448,9 @@ export default function Home() {
     return '';
   };
 
-  const runDeepPipeline = async (text: string, currentRes: string, startStage: number, onProgress: (msg: string) => void, onSave: (r: string, s: number) => void, episodeContext: string = '', pipelineStorySummary: string = storySummary) => {
+  const runDeepPipeline = async (text: string, currentRes: string, startStage: number, onProgress: (msg: string) => void, onSave: (r: string, s: number) => void, episodeContext: string = '', pipelineStorySummary: string = storySummary, mode: 'novel' | 'general' = 'novel') => {
     if (!text.trim()) return currentRes;
-    const payload = { from, to, model, glossary, tone, genre, context: `${context}\nLore: ${worldContext}`, characterProfiles, episodeContext, storySummary: pipelineStorySummary };
+    const payload = { from, to, model, glossary, tone, genre, context: `${context}\nLore: ${worldContext}`, characterProfiles, episodeContext, storySummary: pipelineStorySummary, mode };
     
     let tempResult = currentRes || text;
 
@@ -420,30 +461,36 @@ export default function Home() {
       onSave(tempResult, 2);
     }
 
-    if (startStage <= 2) {
-      const p2 = apiKeys['deepseek'] ? 'deepseek' : provider;
-      onProgress(`에이전트 2 (고증/로어 마스터) 점검 중... (via ${p2})`);
-      tempResult = await fetchStream({ ...payload, provider: p2, apiKey: apiKeys[p2], text: tempResult, sourceText: text, stage: 2 }, (chunk) => onSave(chunk, 2));
-      onSave(tempResult, 3);
-    }
+    if (mode === 'novel') {
+      if (startStage <= 2) {
+        const p2 = apiKeys['deepseek'] ? 'deepseek' : provider;
+        onProgress(`에이전트 2 (고증/로어 마스터) 점검 중... (via ${p2})`);
+        tempResult = await fetchStream({ ...payload, provider: p2, apiKey: apiKeys[p2], text: tempResult, sourceText: text, stage: 2 }, (chunk) => onSave(chunk, 2));
+        onSave(tempResult, 3);
+      }
 
-    if (startStage <= 3) {
-      const p3 = apiKeys['claude'] ? 'claude' : provider;
-      onProgress(`에이전트 3 (문체/호흡 감독관) 수정 중... (via ${p3})`);
-      tempResult = await fetchStream({ ...payload, provider: p3, apiKey: apiKeys[p3], text: tempResult, sourceText: text, stage: 3 }, (chunk) => onSave(chunk, 3));
-      onSave(tempResult, 4);
-    }
+      if (startStage <= 3) {
+        const p3 = apiKeys['claude'] ? 'claude' : provider;
+        onProgress(`에이전트 3 (문체/호흡 감독관) 수정 중... (via ${p3})`);
+        tempResult = await fetchStream({ ...payload, provider: p3, apiKey: apiKeys[p3], text: tempResult, sourceText: text, stage: 3 }, (chunk) => onSave(chunk, 3));
+        onSave(tempResult, 4);
+      }
 
-    if (startStage <= 4) {
-      const p4 = apiKeys['openai'] ? 'openai' : provider;
-      onProgress(`에이전트 4 (은유/복선 분석가) 심층 투입... (via ${p4})`);
-      tempResult = await fetchStream({ ...payload, provider: p4, apiKey: apiKeys[p4], text: tempResult, sourceText: text, stage: 4 }, (chunk) => onSave(chunk, 4));
+      if (startStage <= 4) {
+        const p4 = apiKeys['openai'] ? 'openai' : provider;
+        onProgress(`에이전트 4 (은유/복선 분석가) 심층 투입... (via ${p4})`);
+        tempResult = await fetchStream({ ...payload, provider: p4, apiKey: apiKeys[p4], text: tempResult, sourceText: text, stage: 4 }, (chunk) => onSave(chunk, 4));
+        onSave(tempResult, 5);
+      }
+    } else {
+      // General mode: skip stages 2-4, jump straight to final polish
+      onProgress('범용 모드: 정확도 우선 검수 중...');
       onSave(tempResult, 5);
     }
 
     if (startStage <= 5) {
       const p5 = apiKeys['mistral'] ? 'mistral' : (apiKeys['deepseek'] ? 'deepseek' : provider);
-      onProgress(`에이전트 5 (총괄 편집장) 윤문 및 픽업... (via ${p5})`);
+      onProgress(`${mode === 'novel' ? '에이전트 5 (총괄 편집장) 윤문 및 픽업' : '최종 교정 (문법/오타 제거)'}... (via ${p5})`);
       tempResult = await fetchStream({ ...payload, provider: p5, apiKey: apiKeys[p5], text: tempResult, sourceText: text, stage: 5 }, (chunk) => onSave(chunk, 5));
       onSave(tempResult, 6);
     }
@@ -483,7 +530,8 @@ export default function Home() {
           }
         },
         epCtx,
-        storySummary
+        crossReferenceContext ? `${crossReferenceContext}\n\n[현재 진행중 시리즈 요약]\n${storySummary}` : storySummary,
+        translationMode
       );
       setResult(finalResult);
       if (activeChapterIndex !== null) {
@@ -512,7 +560,7 @@ export default function Home() {
     try {
       const CONCURRENCY = 3; // 동시 번역 쓰레드 개수
       let activePromises: Promise<void>[] = [];
-      let currentStorySummary = storySummary;
+      let currentStorySummary = crossReferenceContext ? `${crossReferenceContext}\n\n[현재 진행중 시리즈 요약]\n${storySummary}` : storySummary;
 
       for (let i = 0; i < chapters.length; i++) {
         const target = chapters[i];
@@ -543,7 +591,8 @@ export default function Home() {
                    });
                 },
                 epCtx,
-                currentStorySummary
+                currentStorySummary,
+                translationMode
              );
              setChapters(curr => {
                 const updated = [...curr];
@@ -606,6 +655,25 @@ export default function Home() {
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const importUrl = async () => {
+    if (!urlInput.trim()) return;
+    setLoading(true);
+    setStatusMsg('외부 URL 텍스트 가져오는 중...');
+    try {
+      const res = await fetch(`/api/fetch-url?url=${encodeURIComponent(urlInput)}`);
+      if (!res.ok) throw new Error('URL 가져오기 실패');
+      const data = await res.json();
+      setSource(data.text || '');
+      setShowUrlImport(false);
+      setUrlInput('');
+    } catch (err) {
+      alert(`URL 읽기 오류: ${err instanceof Error ? err.message : '알 수 없는 오류'}`);
+    } finally {
+      setLoading(false);
+      setStatusMsg('');
+    }
   };
 
   const swap = () => { setFrom(to); setTo(from); setSource(result); setResult(''); };
@@ -757,6 +825,55 @@ export default function Home() {
           {showSettings && (
             <div className="mb-6 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-3 mb-4 p-4 border border-purple-900/50 bg-purple-950/20 rounded-xl space-y-4">
+                  <div>
+                     <label className="text-[10px] text-purple-400 uppercase font-bold mb-2 block tracking-widest">
+                       현재 프로젝트 (볼륨 30화 제한)
+                     </label>
+                     <div className="flex gap-2 items-center">
+                        <input 
+                           type="text" 
+                           value={projectName} 
+                           onChange={(e) => setProjectName(e.target.value)} 
+                           placeholder="프로젝트명 (예: 소드마스터 1권)" 
+                           className="flex-1 bg-black border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:border-purple-500 outline-none"
+                        />
+                        <button 
+                           onClick={() => {
+                              if(confirm('새 프로젝트를 시작하시겠습니까? 현재 UI 내용은 초기화됩니다 (기존 내용은 클라우드에 보존됨).')) {
+                                 setProjectId(Date.now().toString());
+                                 setProjectName('');
+                                 setChapters([]);
+                                 setSource('');
+                                 setResult('');
+                                 setActiveChapterIndex(null);
+                                 setReferenceIds([]);
+                              }
+                           }}
+                           className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-[10px] font-bold transition-all"
+                        >새 프로젝트 빙의</button>
+                     </div>
+                  </div>
+                  <div>
+                     <label className="text-[10px] text-gray-400 uppercase font-bold mb-2 block tracking-widest">
+                       이전 프로젝트 참조 (Cross-Reference)
+                     </label>
+                     <p className="text-[9px] text-gray-500 mb-2">과거 프로젝트의 동기화된 스토리 요약과 캐릭터 정보를 AI가 번역 컨텍스트로 불러옵니다.</p>
+                     <div className="flex flex-wrap gap-2">
+                        {projectList.filter((p:any) => p.id !== projectId).map((p:any) => (
+                           <button 
+                              key={p.id} 
+                              onClick={() => setReferenceIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
+                              className={`px-3 py-1 text-[10px] rounded-full transition-all border ${referenceIds.includes(p.id) ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-700'}`}
+                           >
+                              {p.project_name || `임시 세션 (${p.id.slice(0, 4)})`}
+                           </button>
+                        ))}
+                        {projectList.filter((p:any) => p.id !== projectId).length === 0 && <span className="text-[10px] text-gray-600 italic">참조 가능한 이전 프로젝트가 없습니다.</span>}
+                     </div>
+                  </div>
+                </div>
+
                 <div className="lg:col-span-2">
                   <label className="text-[10px] text-purple-400 uppercase font-bold mb-2 flex tracking-widest items-center gap-2">
                     Ensemble API Keys 
@@ -890,26 +1007,92 @@ export default function Home() {
           )}
 
           {/* Action Bar */}
-          <div className="mt-8 flex gap-4 max-w-4xl mx-auto">
-            <button 
-              onClick={translate} 
-              disabled={loading || !source.trim()}
-              className="flex-1 py-4 bg-gray-900 hover:bg-gray-850 rounded-2xl text-[11px] font-black tracking-widest text-gray-400 border border-gray-800 transition-all disabled:opacity-20"
-            >
-              FAST DRAFT
-            </button>
-            <button 
-              onClick={deepTranslate} 
-              disabled={loading || !source.trim()}
-              className="flex-2 py-4 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-2xl text-[11px] font-black tracking-widest text-white shadow-xl shadow-purple-500/20 transition-all disabled:opacity-20 relative overflow-hidden"
-            >
-              {statusMsg ? (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                  {statusMsg}
+          <div className="mt-8 max-w-4xl mx-auto space-y-3">
+            {/* Mode Tab Selector */}
+            <div className="flex items-center gap-1 p-1 bg-gray-950 border border-gray-900 rounded-2xl">
+              <button
+                onClick={() => setTranslationMode('novel')}
+                className={`flex-1 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
+                  translationMode === 'novel'
+                    ? 'bg-linear-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
+                    : 'text-gray-600 hover:text-gray-400'
+                }`}
+              >
+                📖 소설 특화 모드
+                <span className="ml-1.5 text-[8px] opacity-70">5단계 앙상블</span>
+              </button>
+              <button
+                onClick={() => setTranslationMode('general')}
+                className={`flex-1 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${
+                  translationMode === 'general'
+                    ? 'bg-linear-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20'
+                    : 'text-gray-600 hover:text-gray-400'
+                }`}
+              >
+                📄 범용 정확도 모드
+                <span className="ml-1.5 text-[8px] opacity-70">2단계 (정밀 교정)</span>
+              </button>
+            </div>
+
+            {/* URL Import Panel */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowUrlImport(v => !v)}
+                className="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-xl text-[10px] font-bold text-gray-400 transition-all"
+              >
+                🌐 URL 읽어오기
+              </button>
+              {showUrlImport && (
+                <div className="flex-1 flex gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                  <input
+                    type="url"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && importUrl()}
+                    placeholder="https://... (뉴스, 블로그 등 공개 URL)"
+                    className="flex-1 bg-black border border-gray-800 focus:border-emerald-500 rounded-xl px-4 py-2 text-xs outline-none transition-all"
+                  />
+                  <button
+                    onClick={importUrl}
+                    disabled={loading || !urlInput.trim()}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 rounded-xl text-[10px] font-bold text-white transition-all disabled:opacity-40"
+                  >
+                    가져오기
+                  </button>
                 </div>
-              ) : 'PRO NOVEL PIPELINE (5-STAGE)'}
-            </button>
+              )}
+            </div>
+
+            {/* Translate Buttons */}
+            <div className="flex gap-4">
+              <button 
+                onClick={translate} 
+                disabled={loading || !source.trim()}
+                className="flex-1 py-4 bg-gray-900 hover:bg-gray-850 rounded-2xl text-[11px] font-black tracking-widest text-gray-400 border border-gray-800 transition-all disabled:opacity-20"
+              >
+                FAST DRAFT
+              </button>
+              <button 
+                onClick={deepTranslate} 
+                disabled={loading || !source.trim()}
+                className={`flex-2 py-4 rounded-2xl text-[11px] font-black tracking-widest text-white shadow-xl transition-all disabled:opacity-20 relative overflow-hidden ${
+                  translationMode === 'novel'
+                    ? 'bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-purple-500/20'
+                    : 'bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/20'
+                }`}
+              >
+                {statusMsg ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
+                    {statusMsg}
+                  </div>
+                ) : (
+                  translationMode === 'novel'
+                    ? 'PRO NOVEL PIPELINE (5-STAGE)'
+                    : 'GENERAL TRANSLATE (2-STAGE)'
+                )}
+              </button>
+            </div>
           </div>
         </section>
 

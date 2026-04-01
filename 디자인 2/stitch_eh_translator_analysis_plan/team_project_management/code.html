@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-fixed-dim": "#a9c7ff",
+            "tertiary-container": "#003233",
+            "on-primary-container": "#7594ca",
+            "surface": "#f7f9fb",
+            "on-tertiary-container": "#00a4a6",
+            "inverse-surface": "#2d3133",
+            "error-container": "#ffdad6",
+            "outline": "#747780",
+            "on-surface": "#191c1e",
+            "surface-container-highest": "#e0e3e5",
+            "secondary-fixed": "#d8e2ff",
+            "secondary-fixed-dim": "#adc7ff",
+            "on-tertiary-fixed-variant": "#004f51",
+            "surface-container-low": "#f2f4f6",
+            "primary-fixed": "#d6e3ff",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "tertiary-fixed-dim": "#2ddbde",
+            "on-secondary-fixed-variant": "#004493",
+            "surface-bright": "#f7f9fb",
+            "secondary": "#0058bb",
+            "on-surface-variant": "#43474f",
+            "inverse-primary": "#a9c7ff",
+            "on-primary-fixed": "#001b3d",
+            "tertiary": "#001b1c",
+            "surface-variant": "#e0e3e5",
+            "on-error-container": "#93000a",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "on-secondary-fixed": "#001a41",
+            "on-tertiary-fixed": "#002020",
+            "on-background": "#191c1e",
+            "secondary-container": "#1471e6",
+            "surface-container": "#eceef0",
+            "on-primary": "#ffffff",
+            "surface-tint": "#405f91",
+            "surface-container-high": "#e6e8ea",
+            "inverse-on-surface": "#eff1f3",
+            "on-primary-fixed-variant": "#264778",
+            "on-secondary": "#ffffff",
+            "background": "#f7f9fb",
+            "primary-container": "#002b5b",
+            "tertiary-fixed": "#5af8fb",
+            "outline-variant": "#c4c6d0",
+            "primary": "#001736",
+            "on-secondary-container": "#fefcff",
+            "surface-dim": "#d8dadc"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
+    .glass-shimmer {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+    }
+    .liquid-gradient {
+      background: linear-gradient(135deg, #001736 0%, #1471e6 100%);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-[#f7f9fb] dark:bg-[#001736] flex flex-col border-r border-[#c4c6d0]/15 z-50 font-['Manrope'] antialiased">
+<div class="p-6 flex items-center space-x-3">
+<div class="w-10 h-10 rounded-xl liquid-gradient flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">translate</span>
+</div>
+<div>
+<h1 class="text-2xl font-bold tracking-tight text-[#001736] dark:text-white">eh-translator</h1>
+<p class="text-[10px] uppercase tracking-widest text-secondary font-bold opacity-80">Enterprise Hub</p>
+</div>
+</div>
+<nav class="flex-1 mt-4 px-3 space-y-1">
+<a class="flex items-center px-4 py-3 text-[#191c1e] dark:text-[#f7f9fb] opacity-70 hover:bg-[#e6e8ea] dark:hover:bg-[#1471e6]/20 transition-colors rounded-xl group" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 text-[#0058bb] font-bold border-r-4 border-[#0058bb] bg-[#e6e8ea] dark:bg-[#1471e6]/10 rounded-l-xl group" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1;">folder_managed</span>
+<span class="text-sm">Projects</span>
+</a>
+<a class="flex items-center px-4 py-3 text-[#191c1e] dark:text-[#f7f9fb] opacity-70 hover:bg-[#e6e8ea] dark:hover:bg-[#1471e6]/20 transition-colors rounded-xl group" href="#">
+<span class="material-symbols-outlined mr-3">group</span>
+<span class="text-sm font-medium">Team</span>
+</a>
+<a class="flex items-center px-4 py-3 text-[#191c1e] dark:text-[#f7f9fb] opacity-70 hover:bg-[#e6e8ea] dark:hover:bg-[#1471e6]/20 transition-colors rounded-xl group" href="#">
+<span class="material-symbols-outlined mr-3">payments</span>
+<span class="text-sm font-medium">Billing</span>
+</a>
+<a class="flex items-center px-4 py-3 text-[#191c1e] dark:text-[#f7f9fb] opacity-70 hover:bg-[#e6e8ea] dark:hover:bg-[#1471e6]/20 transition-colors rounded-xl group" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="p-4 border-t border-[#c4c6d0]/15">
+<button class="w-full liquid-gradient text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center space-x-2 active:scale-[0.98] duration-200 shadow-lg shadow-secondary/20">
+<span class="material-symbols-outlined text-sm">add</span>
+<span>New Project</span>
+</button>
+</div>
+<div class="px-3 pb-6 space-y-1">
+<a class="flex items-center px-4 py-2 text-slate-500 hover:text-primary text-sm transition-colors" href="#">
+<span class="material-symbols-outlined mr-3 text-lg">help</span>
+        Help
+      </a>
+<a class="flex items-center px-4 py-2 text-error hover:opacity-80 text-sm transition-colors" href="#">
+<span class="material-symbols-outlined mr-3 text-lg">logout</span>
+        Logout
+      </a>
+</div>
+</aside>
+<!-- TopAppBar Main -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-white/80 dark:bg-[#001736]/80 backdrop-blur-md flex items-center justify-between px-8 z-40 border-b border-[#c4c6d0]/15 font-['Inter'] text-sm">
+<div class="flex items-center flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 focus:ring-2 focus:ring-secondary/20 text-sm transition-all" placeholder="Search projects or team members..." type="text"/>
+</div>
+</div>
+<div class="flex items-center space-x-6">
+<nav class="flex items-center space-x-6 mr-6">
+<a class="text-[#0058bb] font-semibold" href="#">Translation Status</a>
+<a class="text-slate-500 hover:text-[#0058bb] transition-colors" href="#">Engine Health</a>
+</nav>
+<div class="flex items-center space-x-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors relative">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">forum</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant/30 mx-2"></div>
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-outline-variant/30 object-cover" data-alt="professional headshot of a corporate executive in a modern office with natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtEtbTuclaUkTETGakP7tV3jyA6dhfNNYPSjYF_ProKC8cxeCXsCUNFkNdG5DioYhV-nouZk_ML_douJNoIx6BhCdJGb9cQU5OLHRtu3MiCvMh402tWy4TPFyD92DYgonCOXcYN8xSFX4rZs-IobfbGkpDwttx1S7TlJlA9-87TCaQ9GmejGB-n1yMHxKwv4cvrkKcMyS42zH5mVtcjhWcVSvEY4_RRzxDZ2II0oPRuzA_w5jH48mVTjPJ5u0qEf1i2MMB7ukCr5o"/>
+</div>
+</div>
+</header>
+<!-- TopAppBar Secondary (Status Bar) -->
+<div class="fixed top-16 right-0 left-64 h-10 bg-[#f2f4f6] dark:bg-[#002B5B] flex items-center space-x-6 px-8 z-30 font-['Inter'] text-[12px] font-medium border-b border-outline-variant/15">
+<div class="flex items-center text-green-600">
+<span class="material-symbols-outlined text-[14px] mr-1.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+      GPT-4: Online
+    </div>
+<div class="flex items-center text-green-600">
+<span class="material-symbols-outlined text-[14px] mr-1.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+      DeepL: Active
+    </div>
+<div class="flex-1"></div>
+<div class="flex items-center space-x-4 text-slate-400">
+<span>Organization: <span class="text-on-surface font-semibold">EH-Translator Global</span></span>
+<span class="h-3 w-[1px] bg-outline-variant/30"></span>
+<span>Region: <span class="text-on-surface font-semibold">Seoul (ICN-1)</span></span>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-28 p-8 min-h-screen">
+<!-- Hero Section / Title -->
+<div class="mb-10 flex items-end justify-between">
+<div class="space-y-1">
+<h2 class="text-4xl font-headline font-extrabold tracking-tight text-primary">Workspace</h2>
+<p class="text-on-surface-variant max-w-md">Manage your ongoing localization projects and enterprise collaboration settings in one centralized cockpit.</p>
+</div>
+<div class="flex items-center space-x-3">
+<button class="px-5 py-2.5 rounded-xl bg-surface-container-highest text-secondary font-semibold text-sm hover:bg-surface-container transition-colors flex items-center space-x-2">
+<span class="material-symbols-outlined text-lg">file_export</span>
+<span>TM 내보내기</span>
+</button>
+<button class="px-5 py-2.5 rounded-xl liquid-gradient text-white font-bold text-sm shadow-lg shadow-primary/10 flex items-center space-x-2">
+<span class="material-symbols-outlined text-lg">add_box</span>
+<span>새 프로젝트 생성</span>
+</button>
+</div>
+</div>
+<!-- Bento Grid Content -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Project List (Col 8) -->
+<div class="col-span-12 lg:col-span-8 space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-headline font-bold text-primary">진행 중인 프로젝트</h3>
+<div class="flex items-center text-sm text-secondary font-medium hover:underline cursor-pointer">전체보기 <span class="material-symbols-outlined text-sm ml-1">arrow_forward</span></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Project Card 1 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-md transition-shadow group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center space-x-2 bg-secondary/5 px-2 py-1 rounded-lg">
+<span class="text-xs font-bold text-secondary">KR</span>
+<span class="material-symbols-outlined text-xs text-secondary">trending_flat</span>
+<span class="text-xs font-bold text-secondary">EN</span>
+</div>
+<button class="text-slate-300 group-hover:text-primary transition-colors"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+<h4 class="font-headline font-bold text-primary text-lg mb-1">Global Q3 Marketing Kit</h4>
+<p class="text-xs text-on-surface-variant mb-4">마감일: 2023.11.15 (D-5)</p>
+<div class="space-y-3">
+<div>
+<div class="flex justify-between text-[11px] mb-1 font-medium">
+<span class="text-on-surface-variant">AI 토큰 사용률</span>
+<span class="text-secondary">78%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 78%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex -space-x-2">
+<img class="w-7 h-7 rounded-full border-2 border-white object-cover" data-alt="portrait of a young designer with glasses in a creative studio environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClhawqXh-VBtBCMWb0crzza31frKfAYYtrMRn3yMS77kYtnfN4-nMa7d8rE_sg8atJfheI_4l5A57vScRQ-lzjwgxMk3GAvxG33KDv19ndtIcw9kMqjqqbGwxaIjLtbOPA1ICQNHYaaFuTwtSvzaaPcU9AGFCjg0LoZ8t5XTKlBwZQDUXkqmlIVkkelGgrUc8hc9qcOwntPOJ-GqLuJr14Hy0C8w2RU7TukhINJNguWXp9Bczga556RYsPGo3wyTgYY8G5ubvuP5A"/>
+<img class="w-7 h-7 rounded-full border-2 border-white object-cover" data-alt="smiling woman in professional attire with soft natural lighting background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmuQ344va2XKoeewtmpX7LwoVU1PyWLM4f9Wy56uq1bxFfSDEtNhfRsO-PJsBCpp3d9EUmxxseUjvylFE4AHe_BWF3OSkiH7CRIDjKOi1_O75Ae6VqZzUSFK7vfeSj4Mewmqn2Uc7aEaW2KYas7UZJjzbYKkikzjOgXbHFgm5-lHEQmArnCjNzOCbMdTG8ZgFdZoe_O-oR1h6gyaMgtiO0Js-Ftl0gEUR8ZdT67NeepYhQC8z5IT7IYqT_byPC-0k136BxbDSvDfk"/>
+<div class="w-7 h-7 rounded-full border-2 border-white bg-surface-container flex items-center justify-center text-[10px] font-bold text-on-surface-variant">+3</div>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-bold uppercase tracking-tighter">Reviewing</span>
+</div>
+</div>
+</div>
+<!-- Project Card 2 -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-md transition-shadow group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center space-x-2 bg-secondary/5 px-2 py-1 rounded-lg">
+<span class="text-xs font-bold text-secondary">EN</span>
+<span class="material-symbols-outlined text-xs text-secondary">trending_flat</span>
+<span class="text-xs font-bold text-secondary">JP</span>
+</div>
+<button class="text-slate-300 group-hover:text-primary transition-colors"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+<h4 class="font-headline font-bold text-primary text-lg mb-1">Developer Docs API 2.0</h4>
+<p class="text-xs text-on-surface-variant mb-4">마감일: 2023.12.01 (D-21)</p>
+<div class="space-y-3">
+<div>
+<div class="flex justify-between text-[11px] mb-1 font-medium">
+<span class="text-on-surface-variant">AI 토큰 사용률</span>
+<span class="text-secondary">32%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 32%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex -space-x-2">
+<img class="w-7 h-7 rounded-full border-2 border-white object-cover" data-alt="man with clean professional appearance looking at camera in a bright minimalist office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwebbM9KdlZtG4lbaDlp8tq2A6jT3GFoPwlpItHeReiIOZFuBm4ItUbnXnLSMmNGoqujmzym6P8qzfQTSs-df8fz6rLwHXee8FC92iKMNbKqHpvPMNukTJ0M9YIh-xgFdT23pdIajjhh6GQq2dB1jR4dbtXD2a_e9QV6Wr6LBUFJryAcnPdqQbqPatDCjpZwLo2babluOyxp1eYeAD-FpBpOFJ7i01flCVp41prIUGmKUQH7gHLASZ4vzY9NHBBBk_Wj5EfE0tm_k"/>
+<div class="w-7 h-7 rounded-full border-2 border-white bg-surface-container flex items-center justify-center text-[10px] font-bold text-on-surface-variant">+8</div>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded-full bg-secondary/10 text-secondary font-bold uppercase tracking-tighter">Drafting</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Security & Infrastructure (Insight Card style) -->
+<div class="bg-secondary-container p-6 rounded-xl relative overflow-hidden text-white shadow-xl">
+<div class="glass-shimmer absolute inset-0 pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center space-x-2 mb-4">
+<span class="material-symbols-outlined text-blue-200">security</span>
+<h3 class="font-headline font-bold text-xl">보안 및 권한 설정</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+<div class="flex justify-between items-center mb-3">
+<span class="text-sm font-medium text-blue-50">데이터 저장 위치</span>
+<span class="material-symbols-outlined text-blue-200 text-sm">settings</span>
+</div>
+<div class="flex space-x-2">
+<button class="flex-1 bg-white text-primary text-xs font-bold py-2 rounded-lg">On-Premise (Local)</button>
+<button class="flex-1 bg-white/10 hover:bg-white/20 transition-colors text-white text-xs font-bold py-2 rounded-lg">Cloud (Secure)</button>
+</div>
+</div>
+<div class="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20">
+<div class="flex justify-between items-center mb-3">
+<span class="text-sm font-medium text-blue-50">기업 전용 터널링</span>
+<span class="text-[10px] px-1.5 py-0.5 bg-blue-300 text-primary rounded font-bold">ACTIVE</span>
+</div>
+<p class="text-[11px] text-blue-100 mb-2">VPN 및 전용 엔드포인트를 통한 데이터 암호화 통신이 활성화 되어있습니다.</p>
+<div class="h-1 bg-white/20 rounded-full w-full overflow-hidden">
+<div class="h-full bg-blue-400 w-full animate-pulse"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Team Management (Col 4) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col space-y-6">
+<div class="bg-surface-container-low rounded-2xl p-6 flex-1 border border-outline-variant/10">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-headline font-bold text-primary">팀원 초대 및 관리</h3>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">person_add</span>
+</div>
+<!-- Quick Invite -->
+<div class="mb-8 bg-surface-container-lowest p-4 rounded-xl space-y-4">
+<div class="space-y-1">
+<label class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">대량 초대 (Email or ID)</label>
+<textarea class="w-full text-sm bg-surface-container-low border-none rounded-lg focus:ring-secondary/20 h-20 resize-none p-3" placeholder="example@company.com, user123..."></textarea>
+</div>
+<div class="flex items-center justify-between">
+<select class="text-xs bg-surface-container-low border-none rounded-lg focus:ring-secondary/20 font-medium py-1.5 px-3 pr-8">
+<option>Viewer</option>
+<option selected="">Editor</option>
+<option>Reviewer</option>
+<option>Owner</option>
+</select>
+<button class="px-4 py-1.5 bg-secondary text-white rounded-lg text-xs font-bold hover:bg-secondary-container transition-colors">초대 발송</button>
+</div>
+</div>
+<!-- Team List Density -->
+<div class="space-y-4">
+<h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest border-b border-outline-variant/20 pb-2">활성 팀원 (12)</h4>
+<div class="space-y-3">
+<!-- Member 1 -->
+<div class="flex items-center justify-between p-2 hover:bg-surface-container rounded-xl transition-colors">
+<div class="flex items-center space-x-3">
+<img class="w-9 h-9 rounded-full object-cover" data-alt="confident male professional in a modern office, sharp focus, neutral tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWt4C9gesc8pVLHsL6eBTE3WOlYeEUGiF-f7Ct4Jc8QOZkDEdMYrVlCVbRg6vg2XtSol14eOThSw2LmtHu0VMxTOw8Nn9wqFuvEUfpDb8Ncdno_rxjpinClZaec3Yaz8PRAhL_EYCuCi4y__GbwRmdu50FWKCOUfyExE5ibrS_obJTJ-KXkln7nq9utISlBvQL429pP24LuWU8CK9wpGh5Y5tLbFskQOQLT6BwUCfvDKMziygqDALHuhVjxzliQdCWuHiaV9wHlRA"/>
+<div>
+<p class="text-sm font-bold text-primary leading-none">James Wilson</p>
+<p class="text-[10px] text-on-surface-variant">Localization Lead</p>
+</div>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded bg-primary-container/20 text-primary-container font-bold">Owner</span>
+</div>
+<!-- Member 2 -->
+<div class="flex items-center justify-between p-2 hover:bg-surface-container rounded-xl transition-colors">
+<div class="flex items-center space-x-3">
+<img class="w-9 h-9 rounded-full object-cover" data-alt="professional woman executive looking directly into camera with bright background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdZRR5QQmiAN7NRq7727zPlwb2_chSSs8dh1TVjq3URG9qpwusrar2mXimZOfaFX3MAjN7zb-DM017QfKhveioCnaxHTEacIV7L_VcbPKTTeS6KLc7rmwwOhVtDkdOViLHEodr8p1_Ch1hgb3Yy7mNzR0b0WnA49jPg0NO2DQymee2yPuR1UpygMmb1fGsv3nulxcHWGYGhQZn8cn5t_gnTiY-B2lwT2wmaFsq_O6KgyNbg6h3d94fUAEJSGX6Nzlmr6M8vOKxMXA"/>
+<div>
+<p class="text-sm font-bold text-primary leading-none">Sara Kim</p>
+<p class="text-[10px] text-on-surface-variant">Technical Reviewer</p>
+</div>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-bold">Reviewer</span>
+</div>
+<!-- Member 3 -->
+<div class="flex items-center justify-between p-2 hover:bg-surface-container rounded-xl transition-colors">
+<div class="flex items-center space-x-3">
+<img class="w-9 h-9 rounded-full object-cover" data-alt="side profile of a woman in a creative workspace with thoughtful expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxVbWfQLRoEC4gCVRr87chpv18TQ8W_Y3LXvvmaCqgKcDVF-oE4lFb13ycoZ01gWNSzZeuSJis8c-yoBuOx6QZFVtN-Ys6WGU4q7zIvMBL2j3OQD_qFvpzV_NgeNyELdimX9nswrCtL5BvKOa8nQZEpWHhHqIad6yRXQc-MIrGrYu1I5pauQ72qIwJeG2OYqA6t2CdMNQYGXu_qHP5zNH2tXXbUEML0HTfHq0c44TJu7zF-sMMJ1SPbz2UI0JAa7KLsrxAQZVQ1D4"/>
+<div>
+<p class="text-sm font-bold text-primary leading-none">Alice Dubois</p>
+<p class="text-[10px] text-on-surface-variant">Content Editor</p>
+</div>
+</div>
+<span class="text-[10px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-bold">Editor</span>
+</div>
+</div>
+<button class="w-full py-2 text-xs font-bold text-secondary border border-secondary/20 rounded-xl hover:bg-secondary/5 transition-colors">팀 전체 관리</button>
+</div>
+</div>
+<!-- System Usage Quick Stats -->
+<div class="bg-surface-container-highest p-6 rounded-2xl space-y-4">
+<h3 class="text-sm font-headline font-bold text-primary">이번 달 사용 통계</h3>
+<div class="flex items-end justify-between">
+<div class="space-y-1">
+<p class="text-2xl font-extrabold text-primary">1.2M</p>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">Total Tokens used</p>
+</div>
+<div class="h-12 flex items-end space-x-1">
+<div class="w-2 bg-secondary/30 h-1/4 rounded-full"></div>
+<div class="w-2 bg-secondary/30 h-2/4 rounded-full"></div>
+<div class="w-2 bg-secondary/30 h-3/4 rounded-full"></div>
+<div class="w-2 bg-secondary h-full rounded-full"></div>
+<div class="w-2 bg-secondary/80 h-4/5 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button (FAB) for Search or Quick Action -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="w-14 h-14 rounded-full liquid-gradient text-white flex items-center justify-center shadow-2xl shadow-primary/40 active:scale-90 transition-transform group">
+<span class="material-symbols-outlined text-2xl group-hover:rotate-90 transition-transform duration-300">smart_toy</span>
+</button>
+</div>
+</body></html>

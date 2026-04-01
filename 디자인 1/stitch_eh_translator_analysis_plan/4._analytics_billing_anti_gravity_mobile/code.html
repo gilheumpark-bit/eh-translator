@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-lowest": "#0e0e13",
+            "error-container": "#93000a",
+            "on-primary-container": "#7f62ff",
+            "inverse-surface": "#e4e1e9",
+            "surface-container-highest": "#35343a",
+            "on-tertiary": "#2f3131",
+            "secondary-container": "#602b9d",
+            "on-tertiary-fixed-variant": "#454747",
+            "tertiary": "#c6c6c7",
+            "on-error-container": "#ffdad6",
+            "surface-dim": "#131318",
+            "on-error": "#690005",
+            "on-background": "#e4e1e9",
+            "on-secondary": "#460283",
+            "secondary-fixed-dim": "#dab9ff",
+            "on-secondary-container": "#cfa7ff",
+            "secondary": "#dab9ff",
+            "on-tertiary-fixed": "#1a1c1c",
+            "tertiary-fixed": "#e2e2e2",
+            "outline": "#938f98",
+            "error": "#ffb4ab",
+            "surface-container-high": "#2a292f",
+            "surface-container": "#1f1f25",
+            "on-surface": "#e4e1e9",
+            "background": "#131318",
+            "primary-fixed-dim": "#cabeff",
+            "on-tertiary-container": "#7c7d7d",
+            "on-surface-variant": "#c9c5ce",
+            "secondary-fixed": "#eedbff",
+            "primary": "#cabeff",
+            "on-secondary-fixed": "#2a0053",
+            "surface-bright": "#39383e",
+            "on-primary-fixed": "#1c0062",
+            "inverse-primary": "#603de2",
+            "tertiary-fixed-dim": "#c6c6c7",
+            "primary-fixed": "#e6deff",
+            "surface-container-low": "#1b1b20",
+            "primary-container": "#110046",
+            "surface-variant": "#35343a",
+            "outline-variant": "#48454e",
+            "tertiary-container": "#101212",
+            "surface": "#131318",
+            "inverse-on-surface": "#303036",
+            "on-primary-fixed-variant": "#4717ca",
+            "on-primary": "#31009a",
+            "on-secondary-fixed-variant": "#5e289b",
+            "surface-tint": "#cabeff"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-morphism {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .ghost-border {
+      border: 1px solid rgba(72, 69, 78, 0.15);
+    }
+    .nebula-gradient {
+      background: linear-gradient(135deg, #cabeff 0%, #110046 100%);
+    }
+    .prism-gradient {
+      background: linear-gradient(135deg, #cabeff 0%, #dab9ff 50%, #602b9d 100%);
+    }
+    .floating-card {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .floating-card:hover {
+      transform: translateY(-8px);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest font-body text-on-surface selection:bg-primary selection:text-on-primary overflow-x-hidden min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-xl dark:bg-[#131318]/60 flex justify-between items-center px-6 h-16 w-full shadow-[0px_2px_4px_rgba(228,225,233,0.04)]">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant/20 flex items-center justify-center">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close up portrait of a young professional male in soft futuristic studio lighting with subtle violet reflections" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSallosSlmZ_Q8eVlWuhDzUynmIDSlEZvU1qjDiYEIkHOBysmIX-ZiQR-eXgiqzuq_k6AH3Sq2KYseMXX8wSz7STnuKWa2NCsUp5Jf6HhPs1-0RwieCt-K9Tp5uFPB6-RZ7g1ssTNg3g4miY21ugRrmSWivenrRzhupJ9MFn-pHJR9NqmaHDgVR9nrPSUt9iIOd0zJDxxgXRH2Fp8X6eSZFTDVNXH6hk5US2L7-Gr_7JZO9QFJum4oRbrcaew3GxuxTYgrWmBsGzo"/>
+</div>
+<h1 class="text-xl font-bold tracking-[-0.02em] text-[#cabeff] font-manrope">NTE</h1>
+</div>
+<button class="hover:translate-y-[-2px] transition-transform text-[#cabeff]">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-md mx-auto space-y-12">
+<!-- Hero Analytics Section -->
+<section class="relative">
+<div class="flex justify-between items-end mb-6">
+<div>
+<span class="text-xs uppercase tracking-[0.2em] text-primary/60 font-semibold">Narrative Flow</span>
+<h2 class="text-4xl font-extrabold tracking-tighter text-on-surface">Analytics</h2>
+</div>
+<div class="text-right">
+<span class="text-primary-fixed-dim text-2xl font-bold">98.2%</span>
+<p class="text-[10px] text-outline uppercase tracking-wider">Precision</p>
+</div>
+</div>
+<!-- Data Visualization Widget -->
+<div class="w-full aspect-[4/3] glass-morphism bg-surface/60 rounded-3xl ghost-border p-6 flex flex-col justify-between relative overflow-hidden floating-card shadow-[0px_20px_40px_rgba(19,19,24,0.4)]">
+<!-- Connecting Nodes Visualization -->
+<div class="absolute inset-0 opacity-20 pointer-events-none">
+<svg fill="none" height="100%" viewbox="0 0 300 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+<path d="M20 150Q80 120 150 140T280 40" stroke="#cabeff" stroke-dasharray="4 4" stroke-width="2"></path>
+<circle cx="20" cy="150" fill="#dab9ff" r="4"></circle>
+<circle cx="150" cy="140" fill="#dab9ff" r="4"></circle>
+<circle cx="280" cy="40" fill="#dab9ff" r="4"></circle>
+<circle cx="20" cy="150" fill="#dab9ff" fill-opacity="0.2" r="8"></circle>
+</svg>
+</div>
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<p class="text-sm text-outline-variant">Throughput</p>
+<p class="text-xl font-bold">12.4k <span class="text-xs font-normal text-secondary">tokens/sec</span></p>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="flex items-end justify-between gap-1 h-24">
+<div class="w-full bg-primary/20 rounded-t-lg h-[40%]"></div>
+<div class="w-full bg-primary/30 rounded-t-lg h-[65%]"></div>
+<div class="w-full bg-primary/10 rounded-t-lg h-[30%]"></div>
+<div class="w-full prism-gradient rounded-t-lg h-[90%] shadow-[0_0_15px_rgba(202,190,255,0.3)]"></div>
+<div class="w-full bg-primary/40 rounded-t-lg h-[55%]"></div>
+<div class="w-full bg-primary/25 rounded-t-lg h-[45%]"></div>
+</div>
+</div>
+</section>
+<!-- Celestial Billing Cards -->
+<section class="space-y-8">
+<div class="text-center space-y-2">
+<h3 class="text-2xl font-bold tracking-tight">Upgrade Engine</h3>
+<p class="text-sm text-outline leading-relaxed">Scale your narrative translation potential across dimensions.</p>
+</div>
+<!-- Tier: Pro -->
+<div class="glass-morphism bg-surface-container-high/40 rounded-[2rem] ghost-border p-8 floating-card shadow-[0px_20px_40px_rgba(19,19,24,0.4)] relative overflow-hidden">
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 blur-3xl rounded-full"></div>
+<div class="flex justify-between items-start mb-8">
+<div>
+<h4 class="text-xl font-bold">Nebula Pro</h4>
+<p class="text-xs text-primary-fixed-dim uppercase tracking-widest mt-1">Most Popular</p>
+</div>
+<div class="text-right">
+<span class="text-3xl font-extrabold">$49</span>
+<span class="text-sm text-outline">/mo</span>
+</div>
+</div>
+<ul class="space-y-4 mb-10">
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="check_circle">check_circle</span>
+            Infinite Context Window
+          </li>
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="check_circle">check_circle</span>
+            Prism Latency Protection
+          </li>
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="check_circle">check_circle</span>
+            Priority Neural Nodes
+          </li>
+</ul>
+<button class="w-full prism-gradient py-4 rounded-full font-bold text-on-primary-fixed hover:shadow-[0_0_20px_rgba(202,190,255,0.4)] transition-all active:scale-95">
+          Upgrade to Nebula
+        </button>
+</div>
+<!-- Tier: Core -->
+<div class="bg-surface-container-low/40 rounded-[2rem] border border-white/5 p-8 floating-card shadow-[0px_10px_30px_rgba(0,0,0,0.2)]">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h4 class="text-xl font-bold">Aether Core</h4>
+<p class="text-xs text-outline uppercase tracking-widest mt-1">Current Plan</p>
+</div>
+<div class="text-right">
+<span class="text-3xl font-extrabold">Free</span>
+</div>
+</div>
+<ul class="space-y-4 mb-10 opacity-60">
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-outline text-lg" data-icon="check_circle">check_circle</span>
+            10k Token Monthly Limit
+          </li>
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-outline text-lg" data-icon="check_circle">check_circle</span>
+            Standard Latency
+          </li>
+</ul>
+<button class="w-full bg-surface-container-highest/60 backdrop-blur-md border border-white/10 py-4 rounded-full font-bold text-on-surface opacity-50 cursor-not-allowed">
+          Manage Plan
+        </button>
+</div>
+</section>
+<!-- Secondary Info Blocks -->
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-morphism bg-surface-container-low/30 rounded-2xl p-5 border border-white/5">
+<span class="material-symbols-outlined text-secondary mb-3 block" data-icon="database">database</span>
+<p class="text-xs text-outline mb-1">Storage</p>
+<p class="font-bold">4.2 GB / 5 GB</p>
+</div>
+<div class="glass-morphism bg-surface-container-low/30 rounded-2xl p-5 border border-white/5">
+<span class="material-symbols-outlined text-secondary mb-3 block" data-icon="bolt">bolt</span>
+<p class="text-xs text-outline mb-1">Compute</p>
+<p class="font-bold">High Load</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-0 right-0 mx-auto w-[320px] h-16 z-50 flex justify-around items-center px-4 bg-surface/60 backdrop-blur-lg dark:bg-[#131318]/60 rounded-full border border-white/15 shadow-[0px_20px_40px_rgba(19,19,24,0.4)]">
+<a class="flex items-center justify-center text-white/40 w-12 h-12 hover:translate-y-[-8px] transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</a>
+<a class="flex items-center justify-center text-white/40 w-12 h-12 hover:translate-y-[-8px] transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="translate">translate</span>
+</a>
+<a class="flex items-center justify-center text-white/40 w-12 h-12 hover:translate-y-[-8px] transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+</a>
+<a class="flex items-center justify-center bg-[#cabeff]/20 text-[#cabeff] rounded-full w-12 h-12 shadow-[0_0_15px_rgba(202,190,255,0.3)] hover:translate-y-[-8px] transition-all duration-300 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</a>
+</nav>
+<!-- Background Decorative Nebula -->
+<div class="fixed top-1/4 -right-20 w-80 h-80 bg-secondary/10 blur-[120px] rounded-full -z-10"></div>
+<div class="fixed bottom-1/4 -left-20 w-80 h-80 bg-primary/10 blur-[120px] rounded-full -z-10"></div>
+</body></html>

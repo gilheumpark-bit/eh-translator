@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Usage &amp; Billing | Narrative Translation Engine</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-lowest": "#ffffff",
+              "on-primary-container": "#7594ca",
+              "primary-fixed": "#d6e3ff",
+              "on-tertiary-fixed-variant": "#004f51",
+              "tertiary-container": "#003233",
+              "on-secondary-fixed": "#001a41",
+              "on-primary": "#ffffff",
+              "surface-tint": "#405f91",
+              "secondary": "#0058bb",
+              "on-tertiary-fixed": "#002020",
+              "outline": "#747780",
+              "surface-dim": "#d8dadc",
+              "secondary-container": "#1471e6",
+              "on-secondary-fixed-variant": "#004493",
+              "surface-bright": "#f7f9fb",
+              "on-primary-fixed-variant": "#264778",
+              "on-surface": "#191c1e",
+              "on-error-container": "#93000a",
+              "on-primary-fixed": "#001b3d",
+              "secondary-fixed-dim": "#adc7ff",
+              "primary-fixed-dim": "#a9c7ff",
+              "primary": "#001736",
+              "inverse-surface": "#2d3133",
+              "tertiary": "#001b1c",
+              "surface-container-highest": "#e0e3e5",
+              "primary-container": "#002b5b",
+              "error": "#ba1a1a",
+              "outline-variant": "#c4c6d0",
+              "on-tertiary-container": "#00a4a6",
+              "surface": "#f7f9fb",
+              "inverse-primary": "#a9c7ff",
+              "secondary-fixed": "#d8e2ff",
+              "inverse-on-surface": "#eff1f3",
+              "tertiary-fixed": "#5af8fb",
+              "on-background": "#191c1e",
+              "background": "#f7f9fb",
+              "surface-container": "#eceef0",
+              "surface-variant": "#e0e3e5",
+              "on-secondary-container": "#fefcff",
+              "surface-container-low": "#f2f4f6",
+              "tertiary-fixed-dim": "#2ddbde",
+              "on-secondary": "#ffffff",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "surface-container-high": "#e6e8ea",
+              "on-tertiary": "#ffffff",
+              "on-surface-variant": "#43474f"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .liquid-glass-primary {
+            background: linear-gradient(135deg, #001736 0%, #1471e6 100%);
+        }
+        .ghost-border {
+            border: 1px solid rgba(196, 198, 208, 0.15);
+        }
+        .insight-card-shimmer {
+            position: relative;
+            overflow: hidden;
+        }
+        .insight-card-shimmer::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md shadow-sm docked full-width top-0 sticky z-50 font-['Manrope'] antialiased bg-gradient-to-b from-slate-200/50 to-transparent flex justify-between items-center w-full px-6 py-3">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-[#001736] dark:text-white">Narrative Translation Engine</span>
+<nav class="hidden md:flex items-center space-x-6 text-sm">
+<a class="text-slate-500 hover:bg-slate-100/50 transition-colors px-3 py-1 rounded" href="#">Dashboard</a>
+<a class="text-slate-500 hover:bg-slate-100/50 transition-colors px-3 py-1 rounded" href="#">Projects</a>
+<a class="text-[#0058bb] font-semibold border-b-2 border-[#0058bb] px-3 py-1" href="#">Billing</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="pl-9 pr-4 py-1.5 bg-surface-container-low border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-secondary" placeholder="Search invoices..." type="text"/>
+</div>
+<button class="p-2 hover:bg-slate-100/50 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-secondary-container flex items-center justify-center text-white text-xs font-bold">JD</div>
+</div>
+</header>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 z-40 bg-[#f7f9fb] dark:bg-slate-900 flex flex-col p-4 space-y-2 font-['Manrope'] text-sm font-medium pt-20">
+<div class="mb-8 px-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl liquid-glass-primary flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-white" data-weight="fill">architecture</span>
+</div>
+<div>
+<div class="text-lg font-black text-[#001736] dark:text-white leading-tight">Narrative Engine</div>
+<div class="text-[10px] uppercase tracking-wider text-secondary font-bold">Enterprise Tier</div>
+</div>
+</div>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200/50 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200/50 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span>Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200/50 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Team</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white shadow-sm rounded-lg text-[#0058bb]" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Billing</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-200/50 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<div class="mt-auto pt-6 border-t border-slate-200/50">
+<button class="w-full liquid-glass-primary text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-md">
+<span class="material-symbols-outlined text-sm">add</span>
+<span>New Project</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 flex-1 p-8 max-w-[1600px]">
+<header class="mb-10">
+<h2 class="text-3xl font-extrabold text-primary tracking-tight">Usage &amp; Billing</h2>
+<p class="text-on-surface-variant mt-1 font-body">Monitor your engine consumption and manage enterprise subscription details.</p>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Consumption Chart -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-xl p-6 ghost-border shadow-sm">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h3 class="text-lg font-bold text-primary">Consumption Charts</h3>
+<p class="text-xs text-on-surface-variant">Token &amp; character usage per translation engine</p>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface-container rounded text-xs font-medium text-primary">Last 30 Days</span>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer">more_horiz</span>
+</div>
+</div>
+<div class="h-64 flex items-end gap-4 px-4">
+<!-- Simulated Chart -->
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[20%] w-full rounded-t-sm" title="GPT-4: 20k"></div>
+<div class="bg-secondary h-[40%] w-full" title="DeepL: 40k"></div>
+<div class="bg-secondary-container h-[10%] w-full" title="Google: 10k"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Mon</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[35%] w-full rounded-t-sm"></div>
+<div class="bg-secondary h-[25%] w-full"></div>
+<div class="bg-secondary-container h-[20%] w-full"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Tue</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[15%] w-full rounded-t-sm"></div>
+<div class="bg-secondary h-[60%] w-full"></div>
+<div class="bg-secondary-container h-[15%] w-full"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Wed</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[50%] w-full rounded-t-sm"></div>
+<div class="bg-secondary h-[30%] w-full"></div>
+<div class="bg-secondary-container h-[5%] w-full"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Thu</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[25%] w-full rounded-t-sm"></div>
+<div class="bg-secondary h-[45%] w-full"></div>
+<div class="bg-secondary-container h-[20%] w-full"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Fri</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[10%] w-full rounded-t-sm"></div>
+<div class="bg-secondary h-[10%] w-full"></div>
+<div class="bg-secondary-container h-[5%] w-full"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Sat</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full flex flex-col justify-end gap-1 h-48">
+<div class="bg-primary-container h-[12%] w-full rounded-t-sm"></div>
+<div class="bg-secondary h-[15%] w-full"></div>
+<div class="bg-secondary-container h-[8%] w-full"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Sun</span>
+</div>
+</div>
+<div class="mt-8 flex gap-6 border-t border-slate-100 pt-6">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary-container"></div>
+<span class="text-xs text-on-surface-variant font-medium">GPT-4 Turbo</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-secondary"></div>
+<span class="text-xs text-on-surface-variant font-medium">DeepL Pro</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-secondary-container"></div>
+<span class="text-xs text-on-surface-variant font-medium">Google Cloud</span>
+</div>
+</div>
+</div>
+<!-- Forecast & Invoice Estimation -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<div class="bg-secondary-container rounded-xl p-6 text-white insight-card-shimmer flex-1 shadow-xl flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-white/60">analytics</span>
+<span class="bg-white/20 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">Forecast</span>
+</div>
+<h3 class="text-white/80 text-sm font-medium">Next Invoice Estimation</h3>
+<div class="text-4xl font-black mt-2">$2,482.50</div>
+<p class="text-white/60 text-xs mt-2">Due on Oct 30, 2024</p>
+</div>
+<div class="mt-6 pt-4 border-t border-white/10">
+<div class="flex justify-between text-xs mb-1">
+<span>Projected Growth</span>
+<span class="font-bold">+12% vs last month</span>
+</div>
+<div class="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+<div class="bg-white h-full w-[72%]"></div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-highest rounded-xl p-6 shadow-sm flex-1 ghost-border">
+<h3 class="text-primary font-bold text-sm mb-4">Smart Engine Optimization</h3>
+<div class="space-y-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-lg">lightbulb</span>
+<div>
+<div class="text-xs font-bold text-primary">Routing Recommendation</div>
+<p class="text-[11px] text-on-surface-variant">Switch 40% of DeepL traffic to Google Cloud for English-Spanish pairs to save <span class="text-secondary font-bold">$120/mo</span>.</p>
+</div>
+</div>
+<button class="w-full py-2 bg-white text-secondary text-xs font-bold rounded-lg border border-secondary/20 hover:bg-secondary/5 transition-colors">Apply Optimization</button>
+</div>
+</div>
+</div>
+<!-- Subscription Management -->
+<div class="col-span-12 bg-surface-container-low rounded-2xl p-8 ghost-border">
+<div class="flex flex-col md:flex-row gap-8 items-center">
+<div class="flex-1">
+<span class="inline-block px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full mb-4">Current Plan</span>
+<h3 class="text-3xl font-extrabold text-primary mb-2">Enterprise Tier</h3>
+<p class="text-on-surface-variant max-w-md">Dedicated support, unlimited custom engine training, and priority API access for large-scale narrative deployments.</p>
+<div class="grid grid-cols-2 gap-4 mt-8">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" data-weight="fill">check_circle</span>
+<span class="text-xs font-medium text-primary">Unlimited Users</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" data-weight="fill">check_circle</span>
+<span class="text-xs font-medium text-primary">SSO/SAML Security</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" data-weight="fill">check_circle</span>
+<span class="text-xs font-medium text-primary">Custom Engine Training</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-sm" data-weight="fill">check_circle</span>
+<span class="text-xs font-medium text-primary">Priority 24/7 Support</span>
+</div>
+</div>
+</div>
+<div class="w-full md:w-80 bg-white p-6 rounded-xl shadow-lg border-2 border-secondary/10">
+<div class="text-center">
+<span class="text-slate-400 text-xs font-bold uppercase tracking-widest">Upgrade to</span>
+<h4 class="text-2xl font-black text-primary mt-1">NTE Quantum</h4>
+<div class="text-primary font-bold text-4xl mt-4">$5,000<span class="text-sm font-medium text-slate-400">/mo</span></div>
+</div>
+<ul class="mt-6 space-y-3 mb-8">
+<li class="text-[11px] flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-xs">bolt</span>
+                                    AI-Powered Content Generation
+                                </li>
+<li class="text-[11px] flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-xs">bolt</span>
+                                    Unlimited API Throughput
+                                </li>
+<li class="text-[11px] flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-xs">bolt</span>
+                                    Global Latency Optimization
+                                </li>
+</ul>
+<button class="w-full liquid-glass-primary text-white py-3 rounded-lg font-bold text-sm shadow-md">Upgrade Account</button>
+</div>
+</div>
+</div>
+<!-- Payment & Invoices -->
+<div class="col-span-12 lg:col-span-7 bg-surface-container-lowest rounded-xl p-6 ghost-border shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-primary">Recent Invoices</h3>
+<button class="text-secondary text-xs font-bold hover:underline">View All History</button>
+</div>
+<div class="overflow-hidden">
+<table class="w-full text-left text-sm">
+<thead class="bg-surface-container-low text-on-surface-variant">
+<tr>
+<th class="py-3 px-4 font-semibold text-xs rounded-l-lg">Invoice ID</th>
+<th class="py-3 px-4 font-semibold text-xs">Date</th>
+<th class="py-3 px-4 font-semibold text-xs">Amount</th>
+<th class="py-3 px-4 font-semibold text-xs">Status</th>
+<th class="py-3 px-4 font-semibold text-xs rounded-r-lg text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="py-4 px-4 font-medium text-primary">#NTE-2024-009</td>
+<td class="py-4 px-4 text-on-surface-variant">Sep 30, 2024</td>
+<td class="py-4 px-4 font-bold text-primary">$2,140.00</td>
+<td class="py-4 px-4">
+<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded uppercase">Paid</span>
+</td>
+<td class="py-4 px-4 text-right">
+<button class="p-1 hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-xl">download</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="py-4 px-4 font-medium text-primary">#NTE-2024-008</td>
+<td class="py-4 px-4 text-on-surface-variant">Aug 31, 2024</td>
+<td class="py-4 px-4 font-bold text-primary">$1,980.50</td>
+<td class="py-4 px-4">
+<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded uppercase">Paid</span>
+</td>
+<td class="py-4 px-4 text-right">
+<button class="p-1 hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-xl">download</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="py-4 px-4 font-medium text-primary">#NTE-2024-007</td>
+<td class="py-4 px-4 text-on-surface-variant">Jul 31, 2024</td>
+<td class="py-4 px-4 font-bold text-primary">$2,305.00</td>
+<td class="py-4 px-4">
+<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded uppercase">Paid</span>
+</td>
+<td class="py-4 px-4 text-right">
+<button class="p-1 hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-xl">download</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Payment Methods -->
+<div class="col-span-12 lg:col-span-5 bg-surface-container-lowest rounded-xl p-6 ghost-border shadow-sm">
+<h3 class="text-lg font-bold text-primary mb-6">Payment Methods</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface rounded-xl border border-slate-100">
+<div class="flex items-center gap-4">
+<div class="w-12 h-8 bg-primary rounded flex items-center justify-center text-[8px] text-white font-black italic">VISA</div>
+<div>
+<div class="text-sm font-bold text-primary">Visa ending in 4242</div>
+<div class="text-[10px] text-on-surface-variant font-medium">Expires 12/26 • <span class="text-secondary">Default</span></div>
+</div>
+</div>
+<button class="material-symbols-outlined text-slate-400">edit</button>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface/50 rounded-xl border border-slate-100 border-dashed">
+<div class="flex items-center gap-4">
+<div class="w-12 h-8 bg-slate-200 rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400">account_balance</span>
+</div>
+<div>
+<div class="text-sm font-bold text-primary">Corporate Bank Account</div>
+<div class="text-[10px] text-on-surface-variant font-medium">Chase Bank • **** 8821</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-slate-400">edit</button>
+</div>
+<button class="w-full py-4 rounded-xl border-2 border-dashed border-slate-200 text-slate-400 hover:border-secondary/30 hover:text-secondary transition-all flex items-center justify-center gap-2 text-sm font-bold mt-4">
+<span class="material-symbols-outlined">add_card</span>
+                            Add Payment Method
+                        </button>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 border-t border-slate-200/20 mt-16 flex flex-col md:flex-row justify-between items-center px-4 max-w-7xl mx-auto font-['Inter'] text-xs uppercase tracking-widest text-slate-400">
+<span>© 2024 Narrative Translation Engine. All rights reserved.</span>
+<div class="flex gap-8 mt-4 md:mt-0">
+<a class="hover:text-[#001736] transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-[#001736] transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-[#001736] transition-colors" href="#">Legal</a>
+<a class="hover:text-[#001736] transition-colors" href="#">Contact</a>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-fixed": "#8df5e4",
+              "on-tertiary-fixed": "#20005f",
+              "inverse-surface": "#2c3134",
+              "on-primary-fixed-variant": "#0040a2",
+              "on-surface": "#171c1f",
+              "on-tertiary": "#ffffff",
+              "surface-container-low": "#f0f4f8",
+              "on-secondary-fixed": "#00201c",
+              "error": "#ba1a1a",
+              "primary-container": "#0052cc",
+              "surface-container": "#eaeef2",
+              "inverse-on-surface": "#edf1f5",
+              "tertiary-fixed-dim": "#cdbdff",
+              "on-secondary": "#ffffff",
+              "inverse-primary": "#b2c5ff",
+              "surface-dim": "#d6dade",
+              "error-container": "#ffdad6",
+              "secondary-container": "#8df5e4",
+              "surface-bright": "#f6fafe",
+              "outline": "#737685",
+              "on-error-container": "#93000a",
+              "tertiary": "#4c00c8",
+              "surface": "#f6fafe",
+              "primary-fixed": "#dae2ff",
+              "on-tertiary-container": "#d9ccff",
+              "tertiary-container": "#642ee7",
+              "surface-tint": "#0c56d0",
+              "on-secondary-fixed-variant": "#005048",
+              "outline-variant": "#c3c6d6",
+              "on-background": "#171c1f",
+              "primary": "#003d9b",
+              "surface-container-high": "#e4e9ed",
+              "on-error": "#ffffff",
+              "tertiary-fixed": "#e8deff",
+              "secondary-fixed-dim": "#70d8c8",
+              "primary-fixed-dim": "#b2c5ff",
+              "on-secondary-container": "#007165",
+              "secondary": "#006b5f",
+              "background": "#f6fafe",
+              "surface-container-highest": "#dfe3e7",
+              "on-tertiary-fixed-variant": "#4f00d0",
+              "on-primary-fixed": "#001848",
+              "surface-variant": "#dfe3e7",
+              "surface-container-lowest": "#ffffff",
+              "on-surface-variant": "#434654",
+              "on-primary": "#ffffff",
+              "on-primary-container": "#c4d2ff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f6fafe; color: #171c1f; }
+        .headline-font { font-family: 'Manrope', sans-serif; }
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f6fafe]/80 dark:bg-[#171c1f]/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(23,28,31,0.06)] flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<span class="font-manrope font-extrabold text-2xl tracking-tight text-[#0052CC] dark:text-[#f6fafe]">NTE</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-500 hover:opacity-80 transition-opacity active:scale-95 transition-transform">notifications</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border-2 border-primary/10">
+<img class="w-full h-full object-cover" data-alt="Close-up studio portrait of a professional creative woman with soft cinematic lighting and neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA77Ve5Ja0WXXVYBZixSbKSJ-69F7S9Z5ZBBSHUGWGjphi3LO46b-KmOS-USpKlMhfUUqiiudhe6bIq_DmgK0xIKdeixGlWy_FMgx5jgbrqIgi6DF9MEjS7HOp7JEXgZyUfdvOzEybfGcGXXKZHWbHaS__K4mCii13WlRYti7B1ew7VkJrSuOXiO5KpmmeKcZ_076eyLII1rNPpN5HvNMorAFXtbVe7W_F1RaTG4QksnwKQgru5OFT3-fQCOx7xqVePHYKRZTegNG8"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6">
+<!-- Hero Section -->
+<section class="mb-12">
+<div class="relative rounded-3xl overflow-hidden mb-8 shadow-[0_32px_64px_rgba(0,61,155,0.12)]">
+<img class="w-full h-80 object-cover" data-alt="Abstract fluid background with iridescent liquid glass textures, soft blue and teal gradients, high-end editorial feel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDU_DpUej4YeQpsqqdBQDy9IGaXtu39Tdk6Q7ci1cfiyQbsw9gdXLElj6WDAcI_vRwtOzcDbXFJVELQAyKii-5IDH4ozEyLrdT0c7awvWE41Mj2gvVhoRvtrBPt7hqgWuY4TNuOHTRT1erog62FDMXDIheHaDE5lmPvH0Av88Elsszkjkyd3qUfxR4_9BelgSIRRSuS05j7SCGw4GLNY-dqeZPWVkK0q31J6fRAUeLMVXQZYoZlPauSpKnVR6xoLe2WrNWCn6KrWk"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<span class="text-on-primary font-label text-xs font-bold tracking-[0.2em] uppercase mb-2 block">The Intelligence Prism</span>
+<h1 class="headline-font font-extrabold text-4xl text-on-primary tracking-tight leading-[1.1]">Beyond Translation</h1>
+</div>
+</div>
+<div class="space-y-6">
+<p class="font-body text-on-surface-variant text-lg leading-relaxed">
+                    NTE transforms your narratives into living elements. Orchestrate global stories with the precision of AI and the soul of literature.
+                </p>
+<button class="w-full bg-gradient-to-br from-primary-container to-primary text-on-primary py-4 px-8 rounded-full font-bold text-lg shadow-lg active:scale-95 transition-transform duration-300">
+                    Get Started
+                </button>
+</div>
+</section>
+<!-- Bento Grid: Specializations -->
+<section class="space-y-4">
+<div class="flex flex-col gap-4">
+<!-- Literature Card -->
+<div class="bg-surface-container-low rounded-3xl p-6 relative overflow-hidden group">
+<div class="relative z-10">
+<div class="w-12 h-12 bg-surface-container-lowest rounded-xl flex items-center justify-center mb-4 shadow-sm">
+<span class="material-symbols-outlined text-primary text-2xl">auto_stories</span>
+</div>
+<h3 class="headline-font font-bold text-xl mb-2">Literature</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">Preserve the poetic rhythm and emotional resonance of long-form prose.</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-9xl">menu_book</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Gaming Card -->
+<div class="bg-secondary-container/20 rounded-3xl p-5 border border-secondary-container/10">
+<div class="w-10 h-10 bg-secondary-container rounded-xl flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-on-secondary-container text-xl">sports_esports</span>
+</div>
+<h3 class="headline-font font-bold text-lg mb-1">Gaming</h3>
+<p class="font-body text-xs text-on-surface-variant">Lore-consistent localization for expansive worlds.</p>
+</div>
+<!-- Marketing Card -->
+<div class="bg-tertiary-container/10 rounded-3xl p-5 border border-tertiary-container/5">
+<div class="w-10 h-10 bg-tertiary-container rounded-xl flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-on-tertiary text-xl">campaign</span>
+</div>
+<h3 class="headline-font font-bold text-lg mb-1">Marketing</h3>
+<p class="font-body text-xs text-on-surface-variant">Culturally adaptive messaging that converts globally.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Command Bar Mimic: Feature Highlight -->
+<section class="mt-12">
+<div class="liquid-glass rounded-3xl p-1 border border-outline-variant/10 shadow-[0_20px_40px_rgba(23,28,31,0.06)]">
+<div class="bg-surface-container-lowest rounded-[1.4rem] p-6">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
+<span class="font-label text-[11px] font-bold tracking-widest uppercase text-on-surface-variant">Live Context Engine</span>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container-low rounded-xl p-4">
+<span class="font-label text-[10px] text-primary font-bold mb-1 block">SOURCE: ENGLISH</span>
+<p class="text-sm italic text-on-surface-variant">"The neon rain washed over the silent monoliths..."</p>
+</div>
+<div class="flex justify-center">
+<span class="material-symbols-outlined text-outline-variant">expand_more</span>
+</div>
+<div class="bg-secondary-container/30 rounded-xl p-4 border-b-2 border-secondary">
+<span class="font-label text-[10px] text-on-secondary-container font-bold mb-1 block">AI-VERIFIED: JAPANESE</span>
+<p class="text-sm font-medium">「ネオンの雨が静かなモノリスに降り注いだ...」</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Editorial Quote -->
+<section class="mt-16 text-center">
+<div class="max-w-[80%] mx-auto">
+<span class="material-symbols-outlined text-4xl text-primary-container/20 mb-4" style="font-variation-settings: 'FILL' 1;">format_quote</span>
+<p class="headline-font text-xl font-bold italic leading-snug text-on-surface">
+                    "Translation is not just about words; it's about the shadows they cast."
+                </p>
+<p class="font-label text-xs mt-4 text-slate-500">— Chief Narrative Architect</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pt-3 pb-6 bg-[#ffffff]/85 dark:bg-[#171c1f]/85 backdrop-blur-2xl rounded-t-3xl shadow-[0_-4px_24px_rgba(0,82,204,0.04)] z-50">
+<a class="flex flex-col items-center justify-center text-[#0052CC] bg-gradient-to-br from-[#0052CC]/10 to-[#0052CC]/5 rounded-xl px-4 py-1 active:scale-90 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#0052CC] transition-colors active:scale-90 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="folder_copy">folder_copy</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#0052CC] transition-colors active:scale-90 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Editor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:text-[#0052CC] transition-colors active:scale-90 transition-all duration-300 ease-out" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Billing</span>
+</a>
+</nav>
+</body></html>

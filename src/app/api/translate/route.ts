@@ -15,15 +15,17 @@ const DEFAULT_MODELS: Record<string, string> = {
 };
 
 function buildPrompt(params: any) {
-  const { text, from, to, tone, genre, context, glossary, characterProfiles, episodeContext, storySummary, sourceText, stage } = params;
+  const { text, from, to, tone, genre, context, glossary, characterProfiles, episodeContext, storySummary, sourceText, stage, mode = 'novel' } = params;
 
-  let baseInstructions = `[SYSTEM: DETERMINISTIC TRANSLATION ENGINE]
+  let baseInstructions = `[SYSTEM: DETERMINISTIC TRANSLATION ENGINE — MODE: ${mode === 'general' ? 'GENERAL ACCURACY' : 'NOVEL SPECIALIST'}]
 You are a highly constrained, professional translation engine converting text from ${from} to ${to}.
 <strict_directives>
 1. NO YAP: Output ONLY the requested final text. NEVER output intros/outros like "Here is the translation" or "Understood".
 2. FORMAT PRESERVATION: Do NOT wrap your output in markdown code blocks (\`\`\`). Do NOT alter capitalization artificially.
 3. 1:1 STRUCTURE: You MUST preserve the exact paragraph/line break structure of the source text. Do not merge or split paragraphs.
-4. TONE & GENRE OVERRIDE: Your output MUST strictly reflect Tone: [${tone}] and Genre: [${genre}].
+${mode === 'general'
+  ? '4. STRICT ACCURACY: Prioritize factual accuracy above all else. Do NOT add creative interpretation. Preserve technical terms, proper nouns, and numeric data exactly.'
+  : `4. TONE & GENRE OVERRIDE: Your output MUST strictly reflect Tone: [${tone}] and Genre: [${genre}].`}
 </strict_directives>
 `;
   if (glossary) baseInstructions += `[Glossary]:\n${glossary}\n`;
@@ -90,7 +92,9 @@ Output ONLY the revised draft.`;
   } else if (stage === 5) {
     prompt = `${baseInstructions}
 MISSION: Stage 5 (Chief Editor).
-Perform a final polish. Fix any lingering awkward phrasing, typos, or grammatical errors. Ensure perfect narrative flow.
+${mode === 'general'
+  ? 'Fix grammar errors, typos, and unnatural phrasing. Do NOT change the meaning or add creative embellishment. Keep it factual and precise.'
+  : 'Perform a final polish. Fix any lingering awkward phrasing, typos, or grammatical errors. Ensure perfect narrative flow.'}
 <source_text>
 ${sourceText}
 </source_text>
@@ -120,7 +124,7 @@ ${text}
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { provider = 'gemini', apiKey, model, stage = 0 } = body;
+    const { provider = 'gemini', apiKey, model, stage = 0, mode = 'novel' } = body;
 
     const finalModel = model || DEFAULT_MODELS[provider] || 'gemini-2.5-flash';
     const finalApiKey = apiKey || process.env[`${provider.toUpperCase()}_API_KEY`] || '';
@@ -141,9 +145,9 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildPrompt(body);
 
-    // Dynamic temperature tuning: Stage 4 (Localization) requires more creativity
-    const dynamicTemperature = (stage === 4) ? 0.4 : 0.1;
-    const dynamicTopP = (stage === 4) ? 0.95 : 0.9;
+    // Dynamic temperature tuning: Stage 4 (Localization) requires more creativity; general mode stays flat
+    const dynamicTemperature = (stage === 4 && mode === 'novel') ? 0.4 : 0.1;
+    const dynamicTopP = (stage === 4 && mode === 'novel') ? 0.95 : 0.9;
 
     if (stage === 10 || stage === 0) {
       const { text } = await generateText({

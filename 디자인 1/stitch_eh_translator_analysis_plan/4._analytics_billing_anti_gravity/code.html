@@ -1,0 +1,353 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#cabeff",
+            "on-error-container": "#ffdad6",
+            "primary-container": "#110046",
+            "on-primary": "#31009a",
+            "surface": "#131318",
+            "secondary-fixed-dim": "#dab9ff",
+            "on-surface-variant": "#c9c5ce",
+            "secondary-container": "#602b9d",
+            "on-primary-container": "#7f62ff",
+            "on-primary-fixed": "#1c0062",
+            "background": "#131318",
+            "surface-tint": "#cabeff",
+            "on-tertiary-fixed": "#1a1c1c",
+            "on-tertiary": "#2f3131",
+            "surface-bright": "#39383e",
+            "surface-container-high": "#2a292f",
+            "on-error": "#690005",
+            "tertiary-container": "#101212",
+            "on-background": "#e4e1e9",
+            "tertiary": "#c6c6c7",
+            "error": "#ffb4ab",
+            "inverse-surface": "#e4e1e9",
+            "error-container": "#93000a",
+            "surface-dim": "#131318",
+            "on-tertiary-container": "#7c7d7d",
+            "outline": "#938f98",
+            "tertiary-fixed-dim": "#c6c6c7",
+            "on-surface": "#e4e1e9",
+            "primary-fixed": "#e6deff",
+            "primary-fixed-dim": "#cabeff",
+            "on-tertiary-fixed-variant": "#454747",
+            "surface-container-highest": "#35343a",
+            "secondary-fixed": "#eedbff",
+            "surface-container": "#1f1f25",
+            "surface-container-low": "#1b1b20",
+            "on-secondary-fixed-variant": "#5e289b",
+            "outline-variant": "#48454e",
+            "surface-container-lowest": "#0e0e13",
+            "tertiary-fixed": "#e2e2e2",
+            "on-secondary-container": "#cfa7ff",
+            "on-primary-fixed-variant": "#4717ca",
+            "on-secondary-fixed": "#2a0053",
+            "inverse-on-surface": "#303036",
+            "inverse-primary": "#603de2",
+            "secondary": "#dab9ff",
+            "surface-variant": "#35343a",
+            "on-secondary": "#460283"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Manrope"],
+            "label": ["Manrope"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-panel {
+      background: rgba(19, 19, 24, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(72, 69, 78, 0.15);
+    }
+    .ghost-border {
+      border: 1px solid rgba(147, 143, 152, 0.15);
+    }
+    .nebula-gradient {
+      background: linear-gradient(135deg, #cabeff 0%, #dab9ff 100%);
+    }
+    .shimmer-text {
+      background: linear-gradient(90deg, #cabeff, #dab9ff, #cabeff);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .anti-gravity {
+      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1);
+    }
+    .anti-gravity:hover {
+      transform: translateY(-8px);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen selection:bg-primary/30">
+<!-- TopNavBar Implementation -->
+<nav class="fixed top-4 left-4 right-4 rounded-full border border-white/15 bg-surface/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(19,19,24,0.4)] flex justify-between items-center px-8 py-3 max-w-7xl mx-auto z-50">
+<div class="text-2xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#cabeff] to-[#dab9ff]">NTE</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-manrope tracking-tight text-sm uppercase text-slate-400 font-medium hover:-translate-y-1 hover:text-white transition-all duration-300" href="#">Explore</a>
+<a class="font-manrope tracking-tight text-sm uppercase text-slate-400 font-medium hover:-translate-y-1 hover:text-white transition-all duration-300" href="#">Engine</a>
+<a class="font-manrope tracking-tight text-sm uppercase text-slate-400 font-medium hover:-translate-y-1 hover:text-white transition-all duration-300" href="#">Nodes</a>
+<a class="font-manrope tracking-tight text-sm uppercase text-[#cabeff] border-b-2 border-[#cabeff] pb-1 hover:-translate-y-1 transition-all duration-300" href="#">Archive</a>
+</div>
+<div class="flex items-center gap-4">
+<div class="material-symbols-outlined text-[#cabeff] cursor-pointer hover:scale-110 transition-transform" data-icon="account_circle">account_circle</div>
+</div>
+</nav>
+<!-- SideNavBar Implementation -->
+<aside class="fixed left-6 top-1/2 -translate-y-1/2 w-20 rounded-3xl border border-white/10 bg-[#131318]/60 backdrop-blur-lg shadow-[0_20px_40px_rgba(0,0,0,0.5)] flex flex-col items-center py-8 gap-6 z-40 hidden lg:flex">
+<div class="flex flex-col items-center justify-center text-slate-500 p-3 hover:-translate-y-2 hover:bg-white/5 transition-all duration-500 ease-out cursor-pointer group">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Dash</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 p-3 hover:-translate-y-2 hover:bg-white/5 transition-all duration-500 ease-out cursor-pointer group">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Nodes</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#cabeff]/20 text-[#cabeff] rounded-xl p-3 shadow-[0_0_15px_rgba(202,190,255,0.3)] scale-95 transition-transform cursor-pointer">
+<span class="material-symbols-outlined" data-icon="payments" style="font-variation-settings: 'FILL' 1;">payments</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1">Economy</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-500 p-3 hover:-translate-y-2 hover:bg-white/5 transition-all duration-500 ease-out cursor-pointer group">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-manrope text-[10px] font-bold uppercase tracking-widest mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Prefs</span>
+</div>
+</aside>
+<main class="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto space-y-24">
+<!-- Hero Section -->
+<section class="flex flex-col gap-4">
+<h1 class="text-display-lg font-headline font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-on-background via-primary to-secondary text-5xl md:text-7xl">
+        Token Economy
+      </h1>
+<p class="text-on-surface-variant max-w-2xl text-lg font-light leading-relaxed">
+        Autonomous resource allocation across the narrative translation grid. Monitor your computational throughput and scaling vectors in real-time.
+      </p>
+</section>
+<!-- Analytics Section (Bento Grid) -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+<!-- Main Chart: 3D-ish Line Graph Container -->
+<div class="md:col-span-8 glass-panel rounded-3xl p-8 anti-gravity ghost-border relative overflow-hidden h-[400px]">
+<div class="flex justify-between items-start mb-12">
+<div>
+<h3 class="text-label-md font-bold text-primary uppercase tracking-[0.2em] mb-1">Resource Consumption</h3>
+<div class="text-3xl font-bold tracking-tighter">1.2M Tokens <span class="text-sm text-secondary font-normal ml-2">↑ 12%</span></div>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-container-highest px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-primary-container transition-colors">Daily</button>
+<button class="bg-primary px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-on-primary">Monthly</button>
+</div>
+</div>
+<!-- Mock 3D Line Chart -->
+<div class="relative h-48 w-full mt-8">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 200">
+<defs>
+<lineargradient id="lineGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#cabeff" stop-opacity="0.8"></stop>
+<stop offset="100%" stop-color="#cabeff" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,150 Q100,80 200,120 T400,60 T600,100 T800,20" fill="none" stroke="#cabeff" stroke-linecap="round" stroke-width="4"></path>
+<path d="M0,150 Q100,80 200,120 T400,60 T600,100 T800,20 V200 H0 Z" fill="url(#lineGrad)"></path>
+</svg>
+<!-- Float nodes -->
+<div class="absolute top-[30px] left-[75%] w-3 h-3 bg-secondary rounded-full shadow-[0_0_15px_#dab9ff] animate-pulse"></div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none"></div>
+</div>
+<!-- Secondary Chart: Floating Bars -->
+<div class="md:col-span-4 space-y-8">
+<div class="glass-panel rounded-3xl p-8 anti-gravity ghost-border min-h-[188px]">
+<h3 class="text-label-sm font-bold text-secondary uppercase tracking-[0.2em] mb-6">Savings Vector</h3>
+<div class="flex items-end gap-3 h-24">
+<div class="w-full bg-surface-container-highest rounded-t-lg h-[40%] hover:bg-secondary/40 transition-all cursor-help" title="Previous Cycle"></div>
+<div class="w-full bg-surface-container-highest rounded-t-lg h-[60%] hover:bg-secondary/40 transition-all cursor-help"></div>
+<div class="w-full bg-secondary rounded-t-lg h-[85%] shadow-[0_0_20px_rgba(218,185,255,0.3)] cursor-help"></div>
+<div class="w-full bg-surface-container-highest rounded-t-lg h-[50%] hover:bg-secondary/40 transition-all cursor-help"></div>
+<div class="w-full bg-surface-container-highest rounded-t-lg h-[30%] hover:bg-secondary/40 transition-all cursor-help"></div>
+</div>
+<div class="mt-4 flex justify-between items-end">
+<span class="text-xs text-slate-500 font-bold">W1 - W5 cycle</span>
+<span class="text-xl font-bold tracking-tight">$4,208</span>
+</div>
+</div>
+<div class="glass-panel rounded-3xl p-8 anti-gravity ghost-border min-h-[188px] flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<h3 class="text-label-sm font-bold text-on-surface-variant uppercase tracking-[0.2em]">Efficiency</h3>
+<span class="material-symbols-outlined text-primary" data-icon="bolt">bolt</span>
+</div>
+<div class="mt-4">
+<div class="text-4xl font-bold tracking-tighter">98.4%</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full mt-3 overflow-hidden">
+<div class="h-full bg-primary w-[98.4%]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Plan Cards: Floating Glass -->
+<section>
+<div class="flex flex-col items-center mb-16 gap-2">
+<h2 class="text-3xl font-bold tracking-tighter text-center">Select Performance Tier</h2>
+<div class="h-1 w-24 nebula-gradient rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Free Tier -->
+<div class="glass-panel rounded-[2rem] p-8 ghost-border anti-gravity flex flex-col justify-between h-[500px]">
+<div>
+<span class="text-label-sm font-bold text-slate-500 uppercase tracking-widest">Base Layer</span>
+<h4 class="text-3xl font-bold mt-2">Free</h4>
+<p class="text-on-surface-variant mt-4 text-sm leading-relaxed">Fundamental access to the NTE core for exploratory translations.</p>
+<ul class="mt-8 space-y-4">
+<li class="flex items-center gap-3 text-sm text-slate-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span> 10k Tokens / Mo
+              </li>
+<li class="flex items-center gap-3 text-sm text-slate-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span> Single Engine Node
+              </li>
+<li class="flex items-center gap-3 text-sm text-slate-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span> Standard Latency
+              </li>
+</ul>
+</div>
+<button class="w-full py-4 rounded-2xl bg-surface-container-highest font-bold uppercase tracking-widest text-xs hover:bg-white/5 border border-white/5 transition-all">Current Plan</button>
+</div>
+<!-- Pro Tier (Active/Floating High) -->
+<div class="relative h-[500px] group">
+<div class="absolute -inset-0.5 nebula-gradient opacity-20 blur-xl group-hover:opacity-40 transition-opacity"></div>
+<div class="relative glass-panel rounded-[2rem] p-8 ghost-border h-full flex flex-col justify-between transform -translate-y-4 border-primary/30 shadow-[0_30px_60px_rgba(202,190,255,0.15)]">
+<div class="absolute top-6 right-8">
+<span class="bg-primary text-on-primary text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Recommended</span>
+</div>
+<div>
+<span class="text-label-sm font-bold text-primary uppercase tracking-widest">Growth Engine</span>
+<h4 class="text-3xl font-bold mt-2">Pro</h4>
+<p class="text-on-surface-variant mt-4 text-sm leading-relaxed">Expanded capacity for professional narrative production workflows.</p>
+<ul class="mt-8 space-y-4">
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-xs text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span> 5M Tokens / Mo
+                </li>
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-xs text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span> 5 Parallel Nodes
+                </li>
+<li class="flex items-center gap-3 text-sm">
+<span class="material-symbols-outlined text-xs text-primary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span> Priority Access
+                </li>
+</ul>
+</div>
+<div class="space-y-4">
+<div class="text-center">
+<span class="text-4xl font-bold">$129</span>
+<span class="text-on-surface-variant text-sm">/cycle</span>
+</div>
+<button class="w-full py-4 rounded-2xl nebula-gradient text-on-primary font-bold uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(202,190,255,0.4)] hover:scale-[1.02] active:scale-95 transition-all">Accelerate Now</button>
+</div>
+</div>
+</div>
+<!-- Enterprise Tier -->
+<div class="glass-panel rounded-[2rem] p-8 ghost-border anti-gravity flex flex-col justify-between h-[500px]">
+<div>
+<span class="text-label-sm font-bold text-slate-500 uppercase tracking-widest">Nexus Protocol</span>
+<h4 class="text-3xl font-bold mt-2">Enterprise</h4>
+<p class="text-on-surface-variant mt-4 text-sm leading-relaxed">Infinite scalability for studio-grade narrative networks.</p>
+<ul class="mt-8 space-y-4">
+<li class="flex items-center gap-3 text-sm text-slate-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span> Unlimited Tokens
+              </li>
+<li class="flex items-center gap-3 text-sm text-slate-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span> Custom Model Training
+              </li>
+<li class="flex items-center gap-3 text-sm text-slate-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span> Dedicated Hardware
+              </li>
+</ul>
+</div>
+<button class="w-full py-4 rounded-2xl bg-surface-container-highest font-bold uppercase tracking-widest text-xs hover:bg-white/5 border border-white/5 transition-all">Contact Ops</button>
+</div>
+</div>
+</section>
+<!-- Payment Info: Translucent Credit Card -->
+<section class="flex flex-col lg:flex-row gap-12 items-center justify-center py-12">
+<div class="relative w-full max-w-md aspect-[1.6/1] anti-gravity">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-transparent blur-3xl opacity-50"></div>
+<!-- Prism Container -->
+<div class="relative glass-panel h-full w-full rounded-3xl p-8 flex flex-col justify-between border-white/20 shadow-2xl overflow-hidden">
+<!-- Glass Reflection shimmer -->
+<div class="absolute -top-1/2 -left-1/2 w-[200%] h-[200%] bg-gradient-to-br from-white/10 via-transparent to-transparent rotate-45 pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-4xl text-[#dab9ff]" data-icon="contactless">contactless</span>
+<div class="text-right">
+<span class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Secure Protocol</span>
+<div class="text-xs font-bold text-primary">NTE TRANSIT</div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="text-xl font-medium tracking-[0.2em]">•••• •••• •••• 8842</div>
+<div class="flex justify-between items-end">
+<div>
+<div class="text-[8px] uppercase tracking-widest text-slate-500">Auth Signature</div>
+<div class="text-sm font-bold">ALEXA MORGAN</div>
+</div>
+<div class="flex gap-1">
+<div class="w-8 h-8 rounded-full bg-primary/20 backdrop-blur-md border border-primary/30"></div>
+<div class="w-8 h-8 rounded-full bg-secondary/20 backdrop-blur-md border border-secondary/30 -ml-4"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="max-w-md space-y-6">
+<div class="glass-panel p-6 rounded-2xl ghost-border">
+<h5 class="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4">Billing History</h5>
+<div class="space-y-4">
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-400">Oct 12, 2024</span>
+<span class="font-bold">Growth Tier Renewal</span>
+<span class="text-primary font-bold">-$129.00</span>
+</div>
+<div class="flex justify-between items-center text-xs">
+<span class="text-slate-400">Sep 12, 2024</span>
+<span class="font-bold">Growth Tier Renewal</span>
+<span class="text-primary font-bold">-$129.00</span>
+</div>
+</div>
+<button class="mt-6 text-xs font-bold text-secondary flex items-center gap-2 hover:translate-x-1 transition-transform">
+            View All Transactions <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Implementation -->
+<footer class="fixed bottom-0 w-full bg-transparent flex justify-between items-center px-12 py-6 z-30 pointer-events-none">
+<div class="font-manrope text-[10px] tracking-[0.2em] text-slate-500 pointer-events-auto">© 2024 NARRATIVE TRANSLATION ENGINE</div>
+<div class="flex gap-6 pointer-events-auto">
+<a class="font-manrope text-[10px] tracking-[0.2em] text-slate-600 hover:text-[#dab9ff] transition-colors uppercase" href="#">Privacy</a>
+<a class="font-manrope text-[10px] tracking-[0.2em] text-slate-600 hover:text-[#dab9ff] transition-colors uppercase" href="#">Contact</a>
+<a class="font-manrope text-[10px] tracking-[0.2em] text-slate-600 hover:text-[#dab9ff] transition-colors uppercase" href="#">Protocols</a>
+</div>
+</footer>
+<!-- Decorative Background Elements -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+<div class="absolute top-[10%] left-[20%] w-[400px] h-[400px] bg-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[20%] right-[10%] w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[150px]"></div>
+<!-- Subtle Grid Overlay -->
+<div class="absolute inset-0 opacity-[0.02]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 40px 40px;"></div>
+</div>
+</body></html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NTE Enterprise | AI Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface": "#000e25",
+              "on-primary-container": "#00214e",
+              "surface-bright": "#002b5b",
+              "inverse-surface": "#f9f9ff",
+              "on-secondary-fixed": "#00298b",
+              "on-tertiary-container": "#60136d",
+              "primary-fixed": "#6c9fff",
+              "on-primary-fixed-variant": "#002a60",
+              "secondary-container": "#1e3da1",
+              "outline-variant": "#354869",
+              "on-primary": "#002d64",
+              "on-error-container": "#ffa8a3",
+              "secondary-fixed-dim": "#b3c1ff",
+              "on-secondary-fixed-variant": "#2b48ac",
+              "error-dim": "#d7383b",
+              "primary-dim": "#669dff",
+              "tertiary-fixed-dim": "#e48fed",
+              "tertiary-container": "#f39cfb",
+              "on-secondary-container": "#c4ceff",
+              "error-container": "#9f0519",
+              "surface-container-low": "#00132e",
+              "surface-container-high": "#001f45",
+              "tertiary-dim": "#e48fed",
+              "on-secondary": "#00185d",
+              "on-background": "#dbe6ff",
+              "surface-dim": "#000e25",
+              "primary": "#84adff",
+              "on-error": "#490006",
+              "surface-variant": "#002550",
+              "surface-container-highest": "#002550",
+              "tertiary": "#fab0ff",
+              "inverse-primary": "#005bc1",
+              "secondary": "#7e98ff",
+              "primary-container": "#6c9fff",
+              "on-tertiary-fixed": "#41004d",
+              "secondary-dim": "#7e98ff",
+              "secondary-fixed": "#c6cfff",
+              "on-tertiary-fixed-variant": "#6a1f77",
+              "surface-container-lowest": "#000000",
+              "tertiary-fixed": "#f39cfb",
+              "on-tertiary": "#6a1f77",
+              "surface-container": "#00193a",
+              "outline": "#62769a",
+              "on-surface-variant": "#98acd2",
+              "on-surface": "#dbe6ff",
+              "primary-fixed-dim": "#5091ff",
+              "error": "#ff716c",
+              "background": "#000e25",
+              "surface-tint": "#84adff",
+              "on-primary-fixed": "#000000",
+              "inverse-on-surface": "#425577"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .liquid-glass {
+            background: rgba(0, 37, 80, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .neon-pulse {
+            box-shadow: 0 0 15px rgba(250, 176, 255, 0.3);
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(132, 173, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 w-full z-50 bg-[#000e25]/60 backdrop-blur-xl shadow-[0_0_40px_rgba(132,173,255,0.15)] flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-[#84adff]">NTE Enterprise</span>
+<nav class="hidden md:flex gap-6 font-['Manrope'] font-medium text-sm">
+<a class="text-[#84adff] font-bold" href="#">Dashboard</a>
+<a class="text-[#98acd2] hover:bg-[#84adff]/10 transition-colors px-2 py-1 rounded" href="#">Projects</a>
+<a class="text-[#98acd2] hover:bg-[#84adff]/10 transition-colors px-2 py-1 rounded" href="#">Team</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#98acd2] hover:bg-[#84adff]/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-[#98acd2] hover:bg-[#84adff]/10 p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">lens_blur</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant/30">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="close-up portrait of a professional woman with a minimalist tech aesthetic background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBE89IBUu5QivmvK1iP2caTLQ_B2OCp_FReMAGWbpna678lGNYj3ZIz-bEBgzoIRl-ERaSsKIuVUol7k-R7EBgKQ6VFgrb0fb_vMdqf5xzoacl2UrzUZRmFS0tIsurtquZRhqGf0LWqjn1_yKAlSTwk5Z0DLlwd6xbf071guwEICHGOsaUGdG8lY2kCjpNps-Qgzz9Ewgh6XrEVmPlKiwkMSZLrSHb56KmWt3Rcl2zpT0OEui8EIvzu-SknGTpeTU-UejKwXnp4sIU"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-12 px-6 md:px-12 max-w-7xl mx-auto min-h-screen">
+<!-- Header Section -->
+<div class="mb-12">
+<h1 class="text-4xl md:text-5xl font-bold tracking-tight text-glow mb-4">Initialize Narrative Tone</h1>
+<p class="text-on-surface-variant max-w-2xl text-lg">Define the soul of your story. Our AI engine will calibrate the linguistic frequency to match your creative intent.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Bento Column: Input & Style Selection -->
+<div class="lg:col-span-7 space-y-8">
+<!-- Input Canvas -->
+<section class="bg-surface-container-low p-8 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary">edit_note</span>
+<h2 class="text-xl font-bold">Core Narrative Script</h2>
+</div>
+<textarea class="w-full h-48 bg-surface-container rounded-lg border-none focus:ring-1 focus:ring-primary/50 text-on-surface p-4 font-body placeholder:text-outline/50 resize-none" placeholder="Enter the primary context or a sample paragraph of your story here..."></textarea>
+<div class="mt-4 flex justify-between items-center">
+<span class="text-xs text-on-surface-variant">450 characters remaining</span>
+<button class="bg-[#84adff] text-[#00214e] px-6 py-2 rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">psychology</span>
+                            Analyze Style
+                        </button>
+</div>
+</section>
+<!-- Voice Style Selection -->
+<section>
+<h3 class="text-on-surface-variant text-sm font-bold uppercase tracking-widest mb-6">Voice Style Configuration</h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="liquid-glass border border-primary/20 p-6 rounded-xl hover:bg-primary/5 transition-all group cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-primary" data-weight="fill">person</span>
+<div class="w-4 h-4 rounded-full border-2 border-primary bg-primary"></div>
+</div>
+<h4 class="font-bold text-lg mb-1">First Person</h4>
+<p class="text-sm text-on-surface-variant">Intimate, subjective, and deeply grounded in the protagonist's senses.</p>
+</div>
+<div class="liquid-glass border border-outline-variant/20 p-6 rounded-xl hover:bg-primary/5 transition-all group cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined text-outline">group</span>
+<div class="w-4 h-4 rounded-full border-2 border-outline-variant"></div>
+</div>
+<h4 class="font-bold text-lg mb-1">Third Person Omniscient</h4>
+<p class="text-sm text-on-surface-variant">The 'God' view. Total insight into all characters and historical context.</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Bento Column: AI Visualization & Comparison -->
+<div class="lg:col-span-5 space-y-8">
+<!-- Tone Visualization Card -->
+<section class="bg-surface-container-high rounded-xl p-8 relative overflow-hidden border border-tertiary/10">
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-bold text-xl">Detected Tone</h3>
+<p class="text-xs text-tertiary flex items-center gap-2 uppercase tracking-tighter mt-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse neon-pulse"></span>
+                                    Processing Engine
+                                </p>
+</div>
+<span class="text-3xl font-extrabold text-primary">88%</span>
+</div>
+<!-- Visual Graph (Liquid/High-tech representation) -->
+<div class="space-y-6">
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold uppercase text-on-surface-variant">
+<span>Gothic / Noir</span>
+<span>High</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-tertiary w-[88%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold uppercase text-on-surface-variant">
+<span>Cyberpunk / Tech</span>
+<span>Medium</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary/40 w-[42%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-bold uppercase text-on-surface-variant">
+<span>Academic / Formal</span>
+<span>Low</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary/20 w-[12%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative Background Gradient for Card -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-tertiary/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+</section>
+<!-- Engine Recommendation Table -->
+<section class="bg-surface-container rounded-xl overflow-hidden">
+<div class="p-6 bg-surface-container-high border-b border-outline-variant/10">
+<h3 class="font-bold">LLM Engine Optimization</h3>
+</div>
+<div class="divide-y divide-outline-variant/5">
+<!-- Recommendation Row -->
+<div class="p-4 grid grid-cols-3 items-center hover:bg-surface-variant/20 transition-colors">
+<div class="text-sm font-bold">GPT-4o</div>
+<div class="flex gap-1">
+<div class="h-1 w-4 bg-tertiary"></div>
+<div class="h-1 w-4 bg-tertiary"></div>
+<div class="h-1 w-4 bg-tertiary"></div>
+<div class="h-1 w-4 bg-tertiary"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+</div>
+<div class="text-right">
+<span class="text-[10px] bg-tertiary/20 text-tertiary px-2 py-1 rounded-full font-bold">OPTIMAL</span>
+</div>
+</div>
+<!-- Recommendation Row -->
+<div class="p-4 grid grid-cols-3 items-center hover:bg-surface-variant/20 transition-colors">
+<div class="text-sm font-bold text-on-surface-variant">DeepL Gen</div>
+<div class="flex gap-1">
+<div class="h-1 w-4 bg-primary"></div>
+<div class="h-1 w-4 bg-primary"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+</div>
+<div class="text-right text-[10px] text-on-surface-variant font-bold">LITERARY</div>
+</div>
+<!-- Recommendation Row -->
+<div class="p-4 grid grid-cols-3 items-center hover:bg-surface-variant/20 transition-colors">
+<div class="text-sm font-bold text-on-surface-variant">Gemini Pro</div>
+<div class="flex gap-1">
+<div class="h-1 w-4 bg-primary"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+<div class="h-1 w-4 bg-outline-variant"></div>
+</div>
+<div class="text-right text-[10px] text-on-surface-variant font-bold">TECHNICAL</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Global Action Bar -->
+<div class="mt-12 p-8 rounded-2xl bg-gradient-to-r from-surface-container-high to-surface-container-low border border-outline-variant/10 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-6">
+<div class="hidden sm:block p-4 bg-primary/10 rounded-full">
+<span class="material-symbols-outlined text-primary text-3xl">rocket_launch</span>
+</div>
+<div>
+<h2 class="text-xl font-bold">Ready for Synthesis</h2>
+<p class="text-on-surface-variant text-sm">Configuration complete. All engines are synchronized with 'Gothic-Noir' parameters.</p>
+</div>
+</div>
+<button class="w-full md:w-auto bg-gradient-to-br from-[#84adff] to-[#6c9fff] text-[#00214e] px-10 py-4 rounded-xl font-bold text-lg hover:shadow-[0_0_30px_rgba(132,173,255,0.4)] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                Launch Narrative Workspace
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full py-8 border-t border-[#354869]/10 bg-[#000e25] flex justify-between items-center px-8 w-full font-['Manrope'] text-xs font-medium">
+<span class="text-[#98acd2]">© 2024 Narrative Intelligence. All rights reserved.</span>
+<div class="flex gap-6">
+<a class="text-[#98acd2] hover:text-[#fab0ff] transition-opacity" href="#">Legal</a>
+<a class="text-[#98acd2] hover:text-[#fab0ff] transition-opacity" href="#">Privacy Policy</a>
+<a class="text-[#98acd2] hover:text-[#fab0ff] transition-opacity" href="#">Contact Support</a>
+<a class="text-[#98acd2] hover:text-[#fab0ff] transition-opacity" href="#">API Status</a>
+</div>
+</footer>
+<!-- Decorative Screen Grain/Noise -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay">
+<svg viewbox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<filter id="noise">
+<feturbulence basefrequency="0.65" numoctaves="3" stitchtiles="stitch" type="fractalNoise"></feturbulence>
+</filter>
+<rect filter="url(#noise)" height="100%" width="100%"></rect>
+</svg>
+</div>
+</body></html>

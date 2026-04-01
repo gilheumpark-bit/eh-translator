@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>eh-translator | Advanced AI Translation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary": "#ffffff",
+            "secondary-fixed-dim": "#70d8c8",
+            "on-error": "#ffffff",
+            "secondary-fixed": "#8df5e4",
+            "inverse-surface": "#2c3134",
+            "surface-container-high": "#e4e9ed",
+            "inverse-primary": "#b2c5ff",
+            "tertiary": "#4c00c8",
+            "on-primary-fixed": "#001848",
+            "primary-container": "#0052cc",
+            "surface": "#f6fafe",
+            "on-secondary-fixed": "#00201c",
+            "error": "#ba1a1a",
+            "primary": "#003d9b",
+            "on-surface": "#171c1f",
+            "on-primary-container": "#c4d2ff",
+            "on-surface-variant": "#434654",
+            "secondary": "#006b5f",
+            "on-tertiary-container": "#d9ccff",
+            "primary-fixed": "#dae2ff",
+            "error-container": "#ffdad6",
+            "on-secondary-container": "#007165",
+            "on-primary": "#ffffff",
+            "surface-container-low": "#f0f4f8",
+            "surface-bright": "#f6fafe",
+            "primary-fixed-dim": "#b2c5ff",
+            "on-background": "#171c1f",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "tertiary-fixed": "#e8deff",
+            "surface-container": "#eaeef2",
+            "surface-dim": "#d6dade",
+            "outline-variant": "#c3c6d6",
+            "tertiary-fixed-dim": "#cdbdff",
+            "surface-variant": "#dfe3e7",
+            "on-secondary-fixed-variant": "#005048",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#0040a2",
+            "on-tertiary-fixed-variant": "#4f00d0",
+            "on-tertiary-fixed": "#20005f",
+            "outline": "#737685",
+            "tertiary-container": "#642ee7",
+            "inverse-on-surface": "#edf1f5",
+            "secondary-container": "#8df5e4",
+            "surface-container-highest": "#dfe3e7",
+            "background": "#f6fafe",
+            "surface-tint": "#0c56d0"
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+<style>
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .liquid-glass {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .ambient-shadow {
+      box-shadow: 0 20px 40px rgba(23, 28, 31, 0.06);
+    }
+    .ghost-border {
+      outline: 1px solid rgba(195, 198, 214, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar Anchor -->
+<aside class="hidden md:flex h-screen w-64 fixed left-0 top-0 border-r border-slate-200/50 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-950 flex-col py-8 px-4 z-50">
+<div class="mb-10 px-2">
+<div class="text-lg font-extrabold text-blue-700 dark:text-blue-400">Translator</div>
+<div class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-1">v2.4 Pro</div>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Dashboard - Active -->
+<a class="flex items-center gap-3 px-4 py-3 text-blue-700 dark:text-blue-400 font-bold border-r-4 border-blue-600 bg-blue-50/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label">Dashboard</span>
+</a>
+<!-- History - Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label">History</span>
+</a>
+<!-- Settings - Inactive -->
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label">Settings</span>
+</a>
+</nav>
+<div class="mt-auto p-4 rounded-xl bg-gradient-to-br from-primary to-primary-container text-on-primary">
+<div class="text-xs font-bold mb-1">PRO FEATURES</div>
+<div class="text-sm opacity-90 mb-3">Unlock GPT-4o and advanced narration tools.</div>
+<button class="w-full py-2 bg-white text-primary font-bold rounded-lg text-sm transition-transform active:scale-95">Upgrade to AI+</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar Anchor -->
+<header class="sticky top-0 z-40 w-full px-6 py-3 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_20px_40px_rgba(23,28,31,0.06)]">
+<div class="flex items-center gap-6 flex-1">
+<!-- Command Bar Search -->
+<div class="relative w-full max-w-md group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400" data-icon="search">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border-none rounded-full bg-slate-100/50 dark:bg-slate-800/50 text-sm focus:ring-2 focus:ring-primary/20 transition-all font-body" placeholder="Command-K for quick actions..." type="text"/>
+<div class="absolute inset-y-0 right-3 flex items-center">
+<kbd class="hidden sm:inline-flex items-center px-2 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-[10px] font-sans text-slate-400">⌘K</kbd>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100/50 rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="flex items-center gap-2 p-1 pl-3 bg-slate-100/50 rounded-full border border-slate-200/50">
+<span class="text-xs font-medium text-slate-700">Account</span>
+<span class="material-symbols-outlined text-blue-700" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Workspace Container -->
+<div class="flex-1 p-8 lg:p-12 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Central Workspace -->
+<div class="lg:col-span-8 space-y-10">
+<!-- Header & Language Selector -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-1">
+<h1 class="text-3xl font-headline font-extrabold tracking-tight text-on-surface">New Translation</h1>
+<p class="text-on-surface-variant font-body">Professional AI-assisted localization workflow.</p>
+</div>
+<div class="flex items-center gap-2 p-1 bg-surface-container-low rounded-full ghost-border">
+<button class="px-4 py-1.5 rounded-full text-xs font-bold bg-white shadow-sm text-primary">ENGLISH</button>
+<span class="material-symbols-outlined text-slate-400 text-sm" data-icon="swap_horiz">swap_horiz</span>
+<button class="px-4 py-1.5 rounded-full text-xs font-bold text-on-surface-variant hover:bg-white/50">KOREAN</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-bold text-on-surface-variant hover:bg-white/50">JAPANESE</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-bold text-on-surface-variant hover:bg-white/50">CHINESE</button>
+</div>
+</section>
+<!-- Input Area (Liquid Glass) -->
+<section class="relative group">
+<div class="liquid-glass ambient-shadow rounded-2xl overflow-hidden ghost-border focus-within:ring-2 focus-within:ring-primary/10 transition-all">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center bg-white/40">
+<span class="text-xs font-bold text-primary flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                SOURCE TEXT
+              </span>
+<div class="flex gap-2">
+<button class="p-1.5 hover:bg-slate-200/50 rounded-lg text-slate-400"><span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span></button>
+<button class="p-1.5 hover:bg-slate-200/50 rounded-lg text-slate-400"><span class="material-symbols-outlined text-sm" data-icon="mic">mic</span></button>
+</div>
+</div>
+<textarea class="w-full min-h-[240px] p-8 bg-transparent border-none focus:ring-0 text-lg font-body text-on-surface placeholder:text-outline-variant resize-none" placeholder="Paste your source text here to begin the intelligent translation process...">The elusive protagonist stood silently at the edge of the neon-drenched cityscape, his coat billowing in the synthetic wind. "We aren't in Neo-Seoul anymore," he whispered to the static in his ear.</textarea>
+<div class="px-6 py-4 bg-white/40 flex justify-between items-center text-[10px] text-outline font-bold tracking-widest uppercase">
+<span>154 Characters / 28 Words</span>
+<span class="text-tertiary">Context: Cyberpunk / Narrative</span>
+</div>
+</div>
+<!-- FAB Equivalent -->
+<button class="absolute -bottom-6 right-8 px-8 py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-bold shadow-xl flex items-center gap-3 transition-transform hover:scale-105 active:scale-95 group">
+<span class="material-symbols-outlined" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            TRANSLATE NOW
+          </button>
+</section>
+<!-- Comparison Section -->
+<section class="pt-8">
+<h2 class="text-xl font-headline font-bold text-on-surface mb-6">Engine Comparison</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- OpenAI Result -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 ghost-border ambient-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3">
+<span class="px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded uppercase">AI-Verified</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<img alt="OpenAI" class="w-8 h-8 rounded-lg" data-alt="minimalist logotype for openai artificial intelligence on white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH62naeMUThE_Lj2V9MeMIk_C846OkMyKGMZbPWeXu7beX1_qwBzusCzTrUUArqjo0I50KHwpWoljeC54nSyVRrOY4OhOAFAs-GKPLtM979FwODI3h_Kz1bO3s3UQ1dOelBdM_zZY_rSboDmZtIKBVv4yqC6sGH7AzlvOqnwuddUGB2jvdGsH42Z0Ny_hOtDAahF90go8m82oDPiYDzFA-ekoPrRw8YUg2N7pQcN_BDvv82gC-0G_2KBWRrv27lwUdalXL4aU9hJA"/>
+<div>
+<div class="text-xs font-bold text-on-surface">GPT-4o Mini</div>
+<div class="text-[10px] text-outline font-medium">98.4% Confidence</div>
+</div>
+</div>
+<p class="text-sm font-body leading-relaxed text-on-surface mb-4">그 신비로운 주인공은 네온이 가득한 도시 풍경의 가장자리에 조용히 서 있었고, 인조 바람에 그의 코트가 휘날렸다. "우리는 더 이상 네오 서울에 있지 않아," 그는 귀의 정전기에 대고 속삭였다.</p>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/10">
+<span class="text-[10px] font-bold text-tertiary uppercase">Nuance: Literary</span>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="thumb_up">thumb_up</span></button>
+</div>
+</div>
+<!-- DeepL Result -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 ghost-border ambient-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3">
+<span class="px-2 py-1 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded uppercase">Standard</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<img alt="DeepL" class="w-8 h-8 rounded-lg" data-alt="deepl translation engine minimalist icon abstract shape" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH7ysvtlLIh0elJGAbTnBLxugCC-bI2y_stYKwHhiZqFLCwiu417MKbIPomymUluWUX-uDNbg97UYL1FIKQrRIH3wsBarCIn9Z0MfIvMPY48_q_sZIlBVoMw0hwEgTHKfEqkOri0jg1VT8bfq9uCji5ehNYBi-gApBv5X5BNuIyVKrhSFuC53wZo4Weydxxw60QKs0GSTBX_fp96efUpOBHsGCJ2kNF6lp_KHx61wxnMjp7RYCuxTTQP3D2YdiOVG7MUE5qE7PoRE"/>
+<div>
+<div class="text-xs font-bold text-on-surface">DeepL Pro</div>
+<div class="text-[10px] text-outline font-medium">92.1% Confidence</div>
+</div>
+</div>
+<p class="text-sm font-body leading-relaxed text-on-surface mb-4">파악하기 어려운 주인공은 네온에 흠뻑 젖은 도시 풍경의 가장자리에 말없이 서 있었고, 그의 코트는 인공적인 바람에 펄럭이고 있었다. "우리는 이제 네오 서울에 없어." 그는 귀속의 노이즈에 대고 속삭였다.</p>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/10">
+<span class="text-[10px] font-bold text-outline uppercase">Nuance: Formal</span>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="thumb_up">thumb_up</span></button>
+</div>
+</div>
+<!-- Google Result -->
+<div class="bg-surface-container-lowest rounded-2xl p-6 ghost-border ambient-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3">
+<span class="px-2 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded uppercase">Review Needed</span>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<img alt="Google" class="w-8 h-8 rounded-lg" data-alt="google translate icon minimalist style on white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyDD6BQZD9tIMlbXYWFBntgUEcXKTM2gMaKm2_3An_FBkcKhVh68upDgXKLpn2e3Y428f_klTdZ2P9pNe1CXKPGXED5rS43JVUr5zHgtT22yemRC_zVJQuhZNUPmR-whd4jhaM9QKHkGBo911D4-hBC0c6-BFOupLhGjqQ8jubF-C9PoP3vElxsnY9FU1ZL44lQCT7fr3IeBbJLZv2WBBp3rEjPJLR8ny1TvC29-EkesWGytCAlsQNwuvteOgeIMecCie6c4p3u5c"/>
+<div>
+<div class="text-xs font-bold text-on-surface">Google Cloud</div>
+<div class="text-[10px] text-outline font-medium">74.5% Confidence</div>
+</div>
+</div>
+<p class="text-sm font-body leading-relaxed text-on-surface mb-4">찾기 힘든 주인공은 네온에 젖은 도시의 가장자리에 조용히 서 있었고, 합성 바람에 그의 코트가 부풀어 올랐다. "우리는 네오 서울에 없습니다." 그는 귀에 들리는 정전기에 속삭였다.</p>
+<div class="flex justify-between items-center pt-4 border-t border-outline-variant/10">
+<span class="text-[10px] font-bold text-outline uppercase">Nuance: Direct</span>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm" data-icon="thumb_up">thumb_up</span></button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Floating Sidebar: Metadata -->
+<aside class="lg:col-span-4">
+<div class="sticky top-24 space-y-6">
+<div class="liquid-glass p-8 rounded-3xl ghost-border ambient-shadow">
+<h3 class="text-sm font-bold tracking-widest text-primary uppercase mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="psychology" style="font-variation-settings: 'FILL' 1;">psychology</span>
+              Contextual Intelligence
+            </h3>
+<div class="space-y-8">
+<!-- Narrative Metadata -->
+<section class="space-y-4">
+<label class="text-[10px] font-bold text-outline uppercase">Project Narrative</label>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface-container text-on-surface text-xs font-medium rounded-full">Cyberpunk</span>
+<span class="px-3 py-1 bg-surface-container text-on-surface text-xs font-medium rounded-full">Noir</span>
+<span class="px-3 py-1 bg-surface-container text-on-surface text-xs font-medium rounded-full">Future-Dystopia</span>
+<span class="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold rounded-full">High-Intensity</span>
+</div>
+</section>
+<!-- Character Notes -->
+<section class="space-y-4">
+<label class="text-[10px] font-bold text-outline uppercase">Active Character Profiles</label>
+<div class="p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 flex gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-slate-300">
+<img alt="Character" class="w-full h-full object-cover" data-alt="stylized cyberpunk character portrait with neon rim light digital art" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBC73PFFz0rivwcvpCHD2Td7x5pU-T7qKz1zZhPkfpzNaE-bpVPBbi8z8_xoo398bEgG50f6g2Tk6G6rZ4-nMgTyJvn427JBLqhA-uuJg-VnTvsvxASFXUgERwwyWYpH_g78CzbsLPs_hcBGczkBgdipRWx-TTBx1qp3WOe6QdDcAaT0N8fFgdqdNLmZIUiZ824mETzPHgnvCabdl7Mg8n79cRehkZf1MSMQ4LrZj0XMVo8q17QMloM3LjHzOdXlMcpU6XNyWeByTg"/>
+</div>
+<div>
+<div class="text-xs font-bold text-on-surface">Kaelen (Protagonist)</div>
+<p class="text-[11px] text-on-surface-variant leading-tight mt-1">Tone: Cynical, stoic. Use short, clipped sentences. Prefers 'Neo-Seoul' over 'Seoul'.</p>
+</div>
+</div>
+</section>
+<!-- Translation Memory -->
+<section class="space-y-4">
+<label class="text-[10px] font-bold text-outline uppercase">Term Persistence</label>
+<ul class="space-y-2">
+<li class="flex items-center justify-between p-2 hover:bg-white/50 rounded-lg transition-all group">
+<span class="text-xs font-body text-on-surface">Neo-Seoul</span>
+<span class="material-symbols-outlined text-xs text-outline group-hover:text-primary" data-icon="lock">lock</span>
+</li>
+<li class="flex items-center justify-between p-2 hover:bg-white/50 rounded-lg transition-all group">
+<span class="text-xs font-body text-on-surface">Synthetic Wind</span>
+<span class="material-symbols-outlined text-xs text-outline group-hover:text-primary" data-icon="link">link</span>
+</li>
+</ul>
+</section>
+</div>
+<button class="w-full mt-8 py-3 px-4 bg-surface-container-highest text-on-surface-variant font-bold text-xs rounded-xl hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="edit_note">edit_note</span>
+              EDIT TRANSLATION GUIDE
+            </button>
+</div>
+<!-- Quick Stats Card -->
+<div class="p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl text-white shadow-xl relative overflow-hidden">
+<div class="absolute -right-12 -top-12 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-4">
+<span class="text-[10px] font-bold opacity-60 uppercase tracking-widest">Usage Balance</span>
+<span class="text-xs font-bold text-blue-400">Pro Plan</span>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-xs">
+<span>AI Tokens</span>
+<span>84% Left</span>
+</div>
+<div class="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-blue-500 w-[84%] rounded-full"></div>
+</div>
+<p class="text-[10px] opacity-40 leading-tight">Next reset in 4 days. You've saved approximately 12 hours of manual editing this week.</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Mobile Bottom Nav - Anchor -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-lg border-t border-slate-100 flex items-center justify-around px-6 z-50">
+<a class="flex flex-col items-center text-blue-700" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-bold mt-1">Dash</span>
+</a>
+<a class="flex flex-col items-center text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="text-[10px] font-bold mt-1">History</span>
+</a>
+<div class="bg-primary p-3 rounded-full -mt-10 shadow-lg shadow-primary/40 border-4 border-white">
+<span class="material-symbols-outlined text-white" data-icon="add">add</span>
+</div>
+<a class="flex flex-col items-center text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="text-[10px] font-bold mt-1">Chat</span>
+</a>
+<a class="flex flex-col items-center text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px] font-bold mt-1">Config</span>
+</a>
+</nav>
+</body></html>
